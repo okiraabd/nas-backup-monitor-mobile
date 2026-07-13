@@ -43,6 +43,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f113f35f-4f6a-4408-867e-a741d24ee630"
+      }
+    },
+    "owner": "qra404s-team"
   }
 }
