@@ -1,4 +1,5 @@
 import { PropsWithChildren, ReactNode } from 'react';
+import { Eye, EyeOff } from 'lucide-react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -19,11 +20,22 @@ export function Screen({
   children,
   scroll = true,
   contentStyle,
-}: PropsWithChildren<{ scroll?: boolean; contentStyle?: StyleProp<ViewStyle> }>) {
+  keyboardShouldPersistTaps,
+}: PropsWithChildren<{
+  scroll?: boolean;
+  contentStyle?: StyleProp<ViewStyle>;
+  keyboardShouldPersistTaps?: 'always' | 'handled' | 'never';
+}>) {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {scroll ? (
-        <ScrollView contentContainerStyle={[styles.screenContent, contentStyle]}>{children}</ScrollView>
+        <ScrollView
+          contentContainerStyle={[styles.screenContent, contentStyle]}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        >
+          {children}
+        </ScrollView>
       ) : (
         <View style={[styles.screenContent, styles.flex, contentStyle]}>{children}</View>
       )}
@@ -115,6 +127,11 @@ export function Field({
   onChangeText,
   placeholder,
   secureTextEntry,
+  onToggleSecureTextEntry,
+  autoCapitalize,
+  autoComplete,
+  autoCorrect,
+  textContentType,
   multiline,
   keyboardType,
 }: {
@@ -123,22 +140,52 @@ export function Field({
   onChangeText: (value: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
+  onToggleSecureTextEntry?: () => void;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoComplete?: 'username' | 'current-password' | 'off';
+  autoCorrect?: boolean;
+  textContentType?: 'username' | 'password';
   multiline?: boolean;
   keyboardType?: 'default' | 'numeric';
 }) {
   return (
     <View style={styles.field}>
       <AppText variant="label">{label}</AppText>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.mutedForeground}
-        secureTextEntry={secureTextEntry}
-        multiline={multiline}
-        keyboardType={keyboardType}
-        style={[styles.input, multiline && styles.textArea]}
-      />
+      <View style={styles.inputShell}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          autoCorrect={autoCorrect}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          secureTextEntry={secureTextEntry}
+          textContentType={textContentType}
+          multiline={multiline}
+          keyboardType={keyboardType}
+          style={[
+            styles.input,
+            onToggleSecureTextEntry && styles.inputWithAction,
+            multiline && styles.textArea,
+          ]}
+        />
+        {onToggleSecureTextEntry ? (
+          <Pressable
+            accessibilityLabel={secureTextEntry ? 'Tampilkan password' : 'Sembunyikan password'}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onToggleSecureTextEntry}
+            style={({ pressed }) => [styles.inputAction, pressed && styles.pressed]}
+          >
+            {secureTextEntry ? (
+              <Eye color={colors.mutedForeground} size={20} />
+            ) : (
+              <EyeOff color={colors.mutedForeground} size={20} />
+            )}
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -364,6 +411,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.foreground,
     backgroundColor: colors.background,
+  },
+  inputShell: {
+    position: 'relative',
+  },
+  inputWithAction: {
+    paddingRight: 52,
+  },
+  inputAction: {
+    position: 'absolute',
+    right: 2,
+    top: 1,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textArea: {
     minHeight: 110,

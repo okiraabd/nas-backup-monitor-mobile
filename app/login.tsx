@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { Server } from 'lucide-react-native';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { authApi } from '@/src/api/auth';
@@ -19,6 +20,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: '', password: '' },
@@ -39,59 +41,81 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen scroll={false} contentStyle={styles.container}>
-      <Card style={styles.card}>
-        <View style={styles.logo}>
-          <Server color={colors.primary} size={34} />
-        </View>
-        <View style={styles.header}>
-          <AppText variant="title" style={styles.center}>
-            Backup Monitor
-          </AppText>
-          <AppText variant="muted" style={styles.center}>
-            Masuk untuk memantau backup NAS dan Ceph.
-          </AppText>
-        </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
+      style={styles.keyboardAvoider}
+    >
+      <Screen contentStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Card style={styles.card}>
+          <View style={styles.logo}>
+            <Server color={colors.primary} size={34} />
+          </View>
+          <View style={styles.header}>
+            <AppText variant="title" style={styles.center}>
+              Backup Monitor
+            </AppText>
+            <AppText variant="muted" style={styles.center}>
+              Masuk untuk memantau backup NAS dan Ceph.
+            </AppText>
+          </View>
 
-        <Controller
-          control={form.control}
-          name="username"
-          render={({ field, fieldState }) => (
-            <View style={styles.fieldWrap}>
-              <Field label="Username" value={field.value} onChangeText={field.onChange} placeholder="admin" />
-              {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
-            </View>
-          )}
-        />
+          <Controller
+            control={form.control}
+            name="username"
+            render={({ field, fieldState }) => (
+              <View style={styles.fieldWrap}>
+                <Field
+                  autoCapitalize="none"
+                  autoComplete="username"
+                  autoCorrect={false}
+                  label="Username"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  placeholder="admin"
+                  textContentType="username"
+                />
+                {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
+              </View>
+            )}
+          />
 
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field, fieldState }) => (
-            <View style={styles.fieldWrap}>
-              <Field
-                label="Password"
-                value={field.value}
-                onChangeText={field.onChange}
-                placeholder="••••••••"
-                secureTextEntry
-              />
-              {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
-            </View>
-          )}
-        />
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <View style={styles.fieldWrap}>
+                <Field
+                  autoCapitalize="none"
+                  autoComplete="current-password"
+                  autoCorrect={false}
+                  label="Password"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onToggleSecureTextEntry={() => setShowPassword((visible) => !visible)}
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  textContentType="password"
+                />
+                {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
+              </View>
+            )}
+          />
 
-        <Button disabled={form.formState.isSubmitting} onPress={form.handleSubmit(onSubmit)}>
-          {form.formState.isSubmitting ? 'Masuk...' : 'Sign in'}
-        </Button>
-      </Card>
-    </Screen>
+          <Button disabled={form.formState.isSubmitting} onPress={form.handleSubmit(onSubmit)}>
+            {form.formState.isSubmitting ? 'Masuk...' : 'Sign in'}
+          </Button>
+        </Card>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardAvoider: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
   },
   card: {
