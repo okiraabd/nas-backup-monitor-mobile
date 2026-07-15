@@ -1,50 +1,58 @@
-# Welcome to your Expo app 👋
+# NAS Backup Monitor Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi Android berbasis Expo Router untuk memantau backup NAS dan Ceph dari backend `nas-backup-monitor`.
 
-## Get started
+## Fitur
 
-1. Install dependencies
+- Login JWT dengan token di SecureStore.
+- Role gate untuk `admin` dan `operator`.
+- Dashboard ringkas: NAS freshness, Ceph health/storage, tren backup, recent failed.
+- Backup logs: filter status/NAS/job/tanggal WIB, pagination, detail, acknowledge, delete admin.
+- Monitoring NAS/Ceph: KPI cards dan chart history.
+- Reports: list, generate PDF, download dengan Authorization header, delete admin.
+- Profile dan logout server-side revoke.
 
-   ```bash
-   npm install
-   ```
+## Konfigurasi API
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Salin `.env.example` bila perlu:
 
 ```bash
-npm run reset-project
+cp .env.example .env
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Default Android emulator:
 
-## Learn more
+```env
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8000/api
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Device fisik harus memakai IP LAN host backend, misalnya:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.20:8000/api
+```
 
-## Join the community
+Produksi sebaiknya memakai HTTPS.
 
-Join our community of developers creating universal apps.
+## Jalankan
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm install
+npm run start
+```
+
+Lalu buka di Android emulator atau Expo dev client.
+
+## Verifikasi
+
+```bash
+npm run typecheck
+npm run lint
+```
+
+## Akun Dev Backend
+
+Dengan `SEED_MODE=demo` atau `users` pada backend:
+
+- `admin` / `admin123`
+- `operator` / `operator`
