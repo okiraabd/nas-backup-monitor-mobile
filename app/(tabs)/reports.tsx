@@ -11,8 +11,10 @@ import { z } from 'zod';
 import { getApiErrorMessage } from '@/src/api/client';
 import { monitorApi } from '@/src/api/monitor';
 import { reportsApi } from '@/src/api/reports';
+import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { PillSelector } from '@/src/components/selectors';
 import { AppText, Button, Card, EmptyState, Field, IconButton, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
+import { useRefreshOnScreenFocus } from '@/src/features/query/QueryLifecycleProvider';
 import { formatDateTimeWib, todayJakartaDate } from '@/src/lib/datetime';
 import { formatBytes } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -41,6 +43,7 @@ export default function ReportsScreen() {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const reportsQuery = useQuery({
     queryKey: queryKeys.reports,
@@ -50,6 +53,17 @@ export default function ReportsScreen() {
     queryKey: queryKeys.nasList,
     queryFn: monitorApi.nasList,
   });
+
+  useRefreshOnScreenFocus(() => void reportsQuery.refetch());
+
+  async function refreshReports() {
+    setIsManualRefreshing(true);
+    try {
+      await reportsQuery.refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }
 
   const form = useForm<GenerateValues>({
     resolver: zodResolver(generateSchema),
@@ -115,16 +129,15 @@ export default function ReportsScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <SectionHeader
-        title="Reports"
-        subtitle="Generate dan unduh PDF backup."
-        action={
-          <Button onPress={() => setGenerateOpen(true)}>
-            <Plus color={colors.white} size={17} />
-            <AppText style={styles.primaryButtonText}>Generate</AppText>
-          </Button>
-        }
-      />
+      <SectionHeader title="Reports" subtitle="Generate dan unduh PDF backup." />
+      <View style={styles.toolbar}>
+        <RefreshButton refreshing={isManualRefreshing} onPress={() => void refreshReports()} />
+        <Button onPress={() => setGenerateOpen(true)}>
+          <Plus color={colors.white} size={17} />
+          <AppText style={styles.primaryButtonText}>Generate</AppText>
+        </Button>
+      </View>
+      <UpdatedAt timestamp={reportsQuery.dataUpdatedAt} />
 
       <Field label="Search" value={search} onChangeText={setSearch} placeholder="Cari filename..." />
 
@@ -255,6 +268,11 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
   },
   reportHeader: {
     flexDirection: 'row',

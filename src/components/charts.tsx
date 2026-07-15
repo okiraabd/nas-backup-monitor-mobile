@@ -14,17 +14,32 @@ interface MetricLineChartProps {
   height?: number;
 }
 
+const MAX_RENDERED_HISTORY_POINTS = 120;
+
+function sampleEvenly<T>(items: T[], maxPoints: number) {
+  if (items.length <= maxPoints) return items;
+  return Array.from({ length: maxPoints }, (_, index) => {
+    const sourceIndex = Math.round((index * (items.length - 1)) / (maxPoints - 1));
+    return items[sourceIndex]!;
+  });
+}
+
 export function MetricLineChart({ title, points = [], isPercentage = true, height = 230 }: MetricLineChartProps) {
   const chartData = useMemo(
-    () =>
-      points
-        .filter((point) => point.value !== null && point.value !== undefined)
+    () => {
+      const numericPoints = points.filter((point) => point.value !== null && point.value !== undefined);
+      const renderedPoints = sampleEvenly(numericPoints, MAX_RENDERED_HISTORY_POINTS);
+      return renderedPoints
         .map((point, index) => ({
           value: Number(point.value),
-          label: index % Math.ceil(Math.max(points.length, 1) / 5) === 0 ? formatTimeWib(point.collected_at) : '',
+          label:
+            index % Math.ceil(Math.max(renderedPoints.length, 1) / 5) === 0
+              ? formatTimeWib(point.collected_at)
+              : '',
           dataPointText: '',
           fullDate: formatDateTimeWib(point.collected_at),
-        })),
+        }));
+    },
     [points],
   );
 
@@ -42,8 +57,8 @@ export function MetricLineChart({ title, points = [], isPercentage = true, heigh
           data={chartData}
           height={height - 36}
           adjustToWidth
-          disableScroll={chartData.length <= 24}
-          spacing={Math.max(38, 260 / Math.max(chartData.length, 1))}
+          disableScroll
+          spacing={Math.max(2, 260 / Math.max(chartData.length - 1, 1))}
           initialSpacing={18}
           endSpacing={28}
           color={colors.primary}

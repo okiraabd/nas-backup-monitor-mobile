@@ -1,17 +1,20 @@
-import { useQuery } from '@tanstack/react-query';
+import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Cpu, Database, HardDrive, MemoryStick, Server } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { getApiErrorMessage } from '@/src/api/client';
 import { monitorApi } from '@/src/api/monitor';
 import { MetricLineChart } from '@/src/components/charts';
+import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { FreshnessBadge, FreshnessDot } from '@/src/components/status-badges';
 import { PillSelector, SegmentedControl } from '@/src/components/selectors';
 import { AppText, Card, EmptyState, ErrorState, LoadingState, ProgressBar, Screen, SectionHeader } from '@/src/components/ui';
+import { useRefreshOnScreenFocus, useScreenPollingInterval } from '@/src/features/query/QueryLifecycleProvider';
 import { formatBytes, formatUptimeSeconds, percentText } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
+import { ACTIVE_REFRESH_MS } from '@/src/lib/refresh';
 import { colors, spacing } from '@/src/theme/colors';
 
 const TIMEFRAMES = [
@@ -25,10 +28,38 @@ const TIMEFRAMES = [
 
 export default function MonitorScreen() {
   const [segment, setSegment] = useState<'nas' | 'ceph'>('nas');
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const activeQueryKey = segment === 'nas' ? ['monitor', 'nas'] : ['monitor', 'ceph'];
+  const activeFetchCount = useIsFetching({ queryKey: activeQueryKey });
+
+  async function refetchActiveSegment() {
+    await queryClient.refetchQueries({ queryKey: activeQueryKey, type: 'active' });
+  }
+
+  async function refreshActiveSegment() {
+    setIsManualRefreshing(true);
+    try {
+      await refetchActiveSegment();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }
+
+  useRefreshOnScreenFocus(() => void refetchActiveSegment());
 
   return (
     <Screen contentStyle={styles.content}>
-      <SectionHeader title="Monitoring" subtitle="Metrik NAS dan Ceph dari collector." />
+      <SectionHeader
+        title="Monitoring"
+        subtitle="Metrik NAS dan Ceph dari collector."
+        action={
+          <RefreshButton
+            refreshing={isManualRefreshing || activeFetchCount > 0}
+            onPress={() => void refreshActiveSegment()}
+          />
+        }
+      />
       <SegmentedControl
         value={segment}
         onChange={setSegment}
@@ -45,10 +76,12 @@ export default function MonitorScreen() {
 function NasMonitor() {
   const [selectedNas, setSelectedNas] = useState('');
   const [hours, setHours] = useState(1);
+  const refreshInterval = useScreenPollingInterval(ACTIVE_REFRESH_MS);
+  const previousSnapshot = useRef<{ sourceId: string; collectedAt: string | null } | null>(null);
   const nasListQuery = useQuery({
     queryKey: queryKeys.nasList,
     queryFn: monitorApi.nasList,
-    refetchInterval: 30_000,
+    refetchInterval: refreshInterval,
   });
 
   useEffect(() => {
@@ -62,7 +95,7 @@ function NasMonitor() {
     queryKey: queryKeys.nasSnapshot(selectedNas),
     queryFn: () => monitorApi.nasSnapshot(selectedNas),
     enabled: Boolean(selectedNas),
-    refetchInterval: 30_000,
+    refetchInterval: refreshInterval,
   });
   const cpuQuery = useQuery({
     queryKey: queryKeys.nasHistory(selectedNas, 'cpu_usage', hours),
@@ -74,6 +107,19 @@ function NasMonitor() {
     queryFn: () => monitorApi.nasHistory(selectedNas, 'ram_used_pct', hours),
     enabled: Boolean(selectedNas),
   });
+  const refetchCpu = cpuQuery.refetch;
+  const refetchRam = ramQuery.refetch;
+
+  useEffect(() => {
+    const collectedAt = snapshotQuery.data?.last_collected_at ?? null;
+    if (!selectedNas || !collectedAt) return;
+
+    const previous = previousSnapshot.current;
+    if (previous?.sourceId === selectedNas && previous.collectedAt && previous.collectedAt !== collectedAt) {
+      void Promise.all([refetchCpu(), refetchRam()]);
+    }
+    previousSnapshot.current = { sourceId: selectedNas, collectedAt };
+  }, [refetchCpu, refetchRam, selectedNas, snapshotQuery.data?.last_collected_at]);
 
   const nasOptions = [
     ...(nasListQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
@@ -92,6 +138,7 @@ function NasMonitor() {
     <View style={styles.stack}>
       <PillSelector value={selectedNas} onChange={setSelectedNas} options={nasOptions} />
       <PillSelector value={hours} onChange={setHours} options={TIMEFRAMES} />
+      <UpdatedAt timestamp={Math.max(snapshotQuery.dataUpdatedAt, cpuQuery.dataUpdatedAt, ramQuery.dataUpdatedAt)} />
       {snapshotQuery.isLoading ? (
         <LoadingState label="Memuat snapshot NAS..." />
       ) : snapshot ? (
@@ -140,10 +187,12 @@ function NasMonitor() {
 
 function CephMonitor() {
   const [hours, setHours] = useState(1);
+  const refreshInterval = useScreenPollingInterval(ACTIVE_REFRESH_MS);
+  const previousCollectedAt = useRef<string | null>(null);
   const snapshotQuery = useQuery({
     queryKey: queryKeys.cephSnapshot,
     queryFn: monitorApi.cephSnapshot,
-    refetchInterval: 30_000,
+    refetchInterval: refreshInterval,
     retry: false,
   });
   const historyQuery = useQuery({
@@ -151,6 +200,15 @@ function CephMonitor() {
     queryFn: () => monitorApi.cephHistory('storage_used_pct', hours),
     retry: false,
   });
+  const refetchHistory = historyQuery.refetch;
+
+  useEffect(() => {
+    const collectedAt = snapshotQuery.data?.last_collected_at ?? null;
+    if (previousCollectedAt.current && collectedAt && previousCollectedAt.current !== collectedAt) {
+      void refetchHistory();
+    }
+    if (collectedAt) previousCollectedAt.current = collectedAt;
+  }, [refetchHistory, snapshotQuery.data?.last_collected_at]);
 
   const snapshot = snapshotQuery.data;
   const getMetric = (name: string) => snapshot?.metrics?.[name];
@@ -169,6 +227,7 @@ function CephMonitor() {
   return (
     <View style={styles.stack}>
       <PillSelector value={hours} onChange={setHours} options={TIMEFRAMES} />
+      <UpdatedAt timestamp={Math.max(snapshotQuery.dataUpdatedAt, historyQuery.dataUpdatedAt)} />
       <View style={styles.sourceHeader}>
         <View style={styles.inline}>
           <Database color={colors.primary} size={22} />

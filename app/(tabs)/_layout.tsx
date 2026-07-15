@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { ChartNoAxesCombined, FileText, History, LayoutDashboard, ServerCog, UserCircle } from 'lucide-react-native';
+import { ChartNoAxesCombined, FileText, History, LayoutDashboard, UserCircle } from 'lucide-react-native';
 
 import { LoadingState, Screen } from '@/src/components/ui';
 import { useAuthStore } from '@/src/store/auth-store';
@@ -71,14 +71,6 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => <UserCircle color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="collector"
-        options={{
-          href: null,
-          title: 'Collector',
-          tabBarIcon: ({ color, size }) => <ServerCog color={color} size={size} />,
         }}
       />
     </Tabs>

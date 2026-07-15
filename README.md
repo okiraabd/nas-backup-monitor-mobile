@@ -10,6 +10,8 @@ Aplikasi Android berbasis Expo Router untuk memantau backup NAS dan Ceph dari ba
 - Backup logs: filter status/NAS/job/tanggal WIB, pagination, detail, acknowledge, delete admin.
 - Monitoring NAS/Ceph: KPI cards dan chart history.
 - Reports: list, generate PDF, download dengan Authorization header, delete admin.
+- Auto-refresh 10 detik hanya pada tab aktif; berhenti saat aplikasi berada di background.
+- Refresh manual tersedia pada Dashboard, Logs, Monitor, dan Reports.
 - Profile dan logout server-side revoke.
 
 ## Konfigurasi API

@@ -1,14 +1,16 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Filter, RefreshCw, Search } from 'lucide-react-native';
+import { Filter, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { logsApi } from '@/src/api/logs';
 import { monitorApi } from '@/src/api/monitor';
+import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { BackupStatusBadge } from '@/src/components/status-badges';
 import { AppText, Button, Card, EmptyState, Field, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
 import { PillSelector } from '@/src/components/selectors';
+import { useRefreshOnScreenFocus } from '@/src/features/query/QueryLifecycleProvider';
 import { formatDateTimeWib, jakartaDateToUtcRange } from '@/src/lib/datetime';
 import { formatDurationSeconds } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -17,11 +19,11 @@ import { colors, spacing } from '@/src/theme/colors';
 const PAGE_SIZE = 15;
 
 export default function LogsScreen() {
-  const queryClient = useQueryClient();
   const [status, setStatus] = useState<'ALL' | 'SUCCESS' | 'FAILED'>('ALL');
   const [nasId, setNasId] = useState('ALL');
   const [jobName, setJobName] = useState('');
   const [dateText, setDateText] = useState('');
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const nasQuery = useQuery({
     queryKey: queryKeys.nasList,
@@ -59,10 +61,20 @@ export default function LogsScreen() {
   const items = logsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const isFiltered = status !== 'ALL' || nasId !== 'ALL' || jobName.trim() || dateText;
 
-  function refresh() {
-    void queryClient.invalidateQueries({ queryKey: ['logs'] });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.nasList });
+  async function refetchScreen() {
+    await Promise.all([logsQuery.refetch(), nasQuery.refetch()]);
   }
+
+  async function refresh() {
+    setIsManualRefreshing(true);
+    try {
+      await refetchScreen();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }
+
+  useRefreshOnScreenFocus(() => void refetchScreen());
 
   return (
     <Screen
@@ -72,13 +84,9 @@ export default function LogsScreen() {
       <SectionHeader
         title="Backup Logs"
         subtitle="Riwayat job backup dari semua NAS."
-        action={
-          <Button variant="outline" onPress={refresh}>
-            <RefreshCw color={colors.foreground} size={16} />
-            <AppText style={styles.actionLabel}>Refresh</AppText>
-          </Button>
-        }
+        action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refresh()} />}
       />
+      <UpdatedAt timestamp={Math.max(logsQuery.dataUpdatedAt, nasQuery.dataUpdatedAt)} />
 
       <Card>
         <View style={styles.filterTitle}>
@@ -172,9 +180,6 @@ export default function LogsScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 100,
-  },
-  actionLabel: {
-    fontWeight: '800',
   },
   filterTitle: {
     flexDirection: 'row',

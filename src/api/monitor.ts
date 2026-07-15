@@ -1,12 +1,12 @@
 import { api } from './client';
 import type {
   ActivityTrendResponse,
-  CollectorStatus,
   MetricHistory,
   MonitorSummary,
   NasListResponse,
   SourceSnapshot,
 } from '@/src/types/api';
+import { HISTORY_MAX_POINTS } from '@/src/lib/refresh';
 
 export const monitorApi = {
   async summary() {
@@ -31,7 +31,7 @@ export const monitorApi = {
 
   async nasHistory(id: string, metric: string, hours: number) {
     const res = await api.get<MetricHistory>(`/monitor/nas/${id}/history`, {
-      params: { metric, hours },
+      params: { metric, hours, max_points: HISTORY_MAX_POINTS },
     });
     return res.data;
   },
@@ -43,13 +43,9 @@ export const monitorApi = {
 
   async cephHistory(metric: string, hours: number) {
     const res = await api.get<MetricHistory>('/monitor/ceph/history', {
-      params: { metric, hours },
+      params: { metric, hours, max_points: HISTORY_MAX_POINTS },
     });
     return res.data;
   },
 
-  async collectorStatus() {
-    const res = await api.get<CollectorStatus>('/monitor/collector/status');
-    return res.data;
-  },
 };

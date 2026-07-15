@@ -5,6 +5,7 @@ import { useState } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/src/features/auth/AuthProvider';
+import { QueryLifecycleProvider } from '@/src/features/query/QueryLifecycleProvider';
 import { colors } from '@/src/theme/colors';
 
 export const unstable_settings = {
@@ -18,7 +19,8 @@ export default function RootLayout() {
         defaultOptions: {
           queries: {
             retry: 1,
-            staleTime: 15_000,
+            staleTime: 10_000,
+            refetchOnWindowFocus: false,
           },
         },
       }),
@@ -26,22 +28,24 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.foreground,
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="logs/[id]" options={{ title: 'Detail Log' }} />
-        </Stack>
-        <StatusBar style="light" backgroundColor={colors.background} />
-      </AuthProvider>
+      <QueryLifecycleProvider>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.foreground,
+              headerShadowVisible: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="logs/[id]" options={{ title: 'Detail Log' }} />
+          </Stack>
+          <StatusBar style="light" backgroundColor={colors.background} />
+        </AuthProvider>
+      </QueryLifecycleProvider>
     </QueryClientProvider>
   );
 }

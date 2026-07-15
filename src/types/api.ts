@@ -112,16 +112,6 @@ export interface ActivityTrendResponse {
   days: ActivityDay[];
 }
 
-export interface CollectorStatus {
-  last_run_at?: string | null;
-  last_status?: string | null;
-  is_mock: boolean;
-  total_sources: number;
-  success_sources: number;
-  failed_sources: number;
-  message?: string | null;
-}
-
 export interface Report {
   id: number;
   filename: string;

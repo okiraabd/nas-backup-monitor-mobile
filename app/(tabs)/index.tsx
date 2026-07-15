@@ -1,41 +1,45 @@
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { AlertCircle, Database, HardDrive, RefreshCw, Server } from 'lucide-react-native';
+import { AlertCircle, Database, HardDrive, Server } from 'lucide-react-native';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { logsApi } from '@/src/api/logs';
 import { monitorApi } from '@/src/api/monitor';
 import { ActivityBarChart } from '@/src/components/charts';
+import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { BackupStatusBadge, FreshnessBadge, FreshnessDot } from '@/src/components/status-badges';
 import { AppText, Button, Card, EmptyState, ErrorState, LoadingState, ProgressBar, Screen, SectionHeader } from '@/src/components/ui';
+import { useRefreshOnScreenFocus, useScreenPollingInterval } from '@/src/features/query/QueryLifecycleProvider';
 import { formatRelative } from '@/src/lib/datetime';
 import { getApiErrorMessage } from '@/src/api/client';
 import { queryKeys } from '@/src/lib/query-keys';
+import { ACTIVE_REFRESH_MS, SLOW_REFRESH_MS } from '@/src/lib/refresh';
 import { colors, spacing } from '@/src/theme/colors';
 
-const REFRESH_INTERVAL = 30_000;
-
 export default function DashboardScreen() {
-  const queryClient = useQueryClient();
+  const refreshInterval = useScreenPollingInterval(ACTIVE_REFRESH_MS);
+  const slowRefreshInterval = useScreenPollingInterval(SLOW_REFRESH_MS);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const summaryQuery = useQuery({
     queryKey: queryKeys.summary,
     queryFn: monitorApi.summary,
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: refreshInterval,
   });
   const activityQuery = useQuery({
     queryKey: queryKeys.activity,
     queryFn: monitorApi.activityTrend,
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: slowRefreshInterval,
   });
   const failedQuery = useQuery({
     queryKey: queryKeys.logs({ status: 'FAILED', page_size: 5 }),
     queryFn: () => logsApi.list({ status: 'FAILED', page_size: 5, page: 1 }),
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: refreshInterval,
   });
   const nasQuery = useQuery({
     queryKey: queryKeys.nasList,
     queryFn: monitorApi.nasList,
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: refreshInterval,
   });
 
   const latestLogQueries = useQueries({
@@ -44,14 +48,38 @@ export default function DashboardScreen() {
         queryKey: queryKeys.logs({ nas_id: nas.source_id, page_size: 1 }),
         queryFn: () => logsApi.list({ nas_id: nas.source_id, page_size: 1, page: 1 }),
         enabled: Boolean(nas.source_id),
-        refetchInterval: REFRESH_INTERVAL,
+        refetchInterval: refreshInterval,
       })) ?? [],
   });
 
-  function refreshAll() {
-    void queryClient.invalidateQueries({ queryKey: ['monitor'] });
-    void queryClient.invalidateQueries({ queryKey: ['logs'] });
+  async function refetchAll() {
+    await Promise.all([
+      summaryQuery.refetch(),
+      activityQuery.refetch(),
+      failedQuery.refetch(),
+      nasQuery.refetch(),
+      ...latestLogQueries.map((query) => query.refetch()),
+    ]);
   }
+
+  async function refreshAll() {
+    setIsManualRefreshing(true);
+    try {
+      await refetchAll();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }
+
+  useRefreshOnScreenFocus(() => void refetchAll());
+
+  const updatedAt = Math.max(
+    summaryQuery.dataUpdatedAt,
+    activityQuery.dataUpdatedAt,
+    failedQuery.dataUpdatedAt,
+    nasQuery.dataUpdatedAt,
+    ...latestLogQueries.map((query) => query.dataUpdatedAt),
+  );
 
   return (
     <Screen
@@ -61,13 +89,9 @@ export default function DashboardScreen() {
       <SectionHeader
         title="Dashboard"
         subtitle="Ringkasan kondisi backup NAS dan Ceph."
-        action={
-          <Button variant="outline" onPress={refreshAll}>
-            <RefreshCw color={colors.foreground} size={16} />
-            <AppText style={styles.refreshText}>Refresh</AppText>
-          </Button>
-        }
+        action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refreshAll()} />}
       />
+      <UpdatedAt timestamp={updatedAt} />
 
       {summaryQuery.isLoading ? (
         <LoadingState />
@@ -266,8 +290,5 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-  },
-  refreshText: {
-    fontWeight: '800',
   },
 });
