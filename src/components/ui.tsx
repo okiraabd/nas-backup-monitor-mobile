@@ -249,6 +249,19 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
+export function InlineError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <View style={styles.inlineError}>
+      <AppText style={styles.inlineErrorText}>{message}</AppText>
+      {onRetry ? (
+        <Button variant="outline" onPress={onRetry}>
+          Try again
+        </Button>
+      ) : null}
+    </View>
+  );
+}
+
 export function LoadingState({ label = 'Loading...' }: { label?: string }) {
   return (
     <View style={styles.loading}>
@@ -451,6 +464,13 @@ const styles = StyleSheet.create({
   },
   centerText: {
     textAlign: 'center',
+  },
+  inlineError: {
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  inlineErrorText: {
+    color: colors.destructiveBright,
   },
   loading: {
     minHeight: 140,

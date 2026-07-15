@@ -1,16 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
-import { getApiErrorMessage } from '@/src/api/client';
+import { getApiErrorMessage, getApiErrorStatus } from '@/src/api/client';
 import { logsApi } from '@/src/api/logs';
 import { BackupStatusBadge, KeyValue } from '@/src/components/status-badges';
-import { AppText, Button, Card, Field, LoadingState, Screen } from '@/src/components/ui';
+import { AppText, Button, Card, ErrorState, Field, LoadingState, Screen } from '@/src/components/ui';
 import { formatDateTimeWib, formatLongDateTimeWib } from '@/src/lib/datetime';
 import { formatBytes, formatDurationSeconds } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -26,7 +26,12 @@ type AckValues = z.infer<typeof ackSchema>;
 export default function LogDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id;
+  const logId = Number(id);
+  const validId = Number.isInteger(logId) && logId > 0;
   const user = useAuthStore((state) => state.user);
+  const bootstrapped = useAuthStore((state) => state.bootstrapped);
+  const bootstrapError = useAuthStore((state) => state.bootstrapError);
+  const retryBootstrap = useAuthStore((state) => state.retryBootstrap);
   const queryClient = useQueryClient();
   const form = useForm<AckValues>({
     resolver: zodResolver(ackSchema),
@@ -35,15 +40,15 @@ export default function LogDetailScreen() {
   const [ackOpen, setAckOpen] = useState(false);
 
   const logQuery = useQuery({
-    queryKey: queryKeys.log(id),
-    queryFn: () => logsApi.detail(id),
-    enabled: Boolean(id),
+    queryKey: queryKeys.log(validId ? logId : id ?? 'invalid'),
+    queryFn: () => logsApi.detail(logId),
+    enabled: validId && bootstrapped && Boolean(user),
   });
 
   const ackMutation = useMutation({
-    mutationFn: (values: AckValues) => logsApi.acknowledge(id, values.remark),
+    mutationFn: (values: AckValues) => logsApi.acknowledge(logId, values.remark),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.log(id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.log(logId) });
       void queryClient.invalidateQueries({ queryKey: ['logs'] });
       setAckOpen(false);
       form.reset();
@@ -52,7 +57,7 @@ export default function LogDetailScreen() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => logsApi.bulkDelete({ log_ids: [Number(id)] }),
+    mutationFn: () => logsApi.bulkDelete({ log_ids: [logId] }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['logs'] });
       router.replace('/logs');
@@ -60,10 +65,48 @@ export default function LogDetailScreen() {
     onError: (error) => Alert.alert('Delete failed', getApiErrorMessage(error)),
   });
 
+  if (!bootstrapped) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState label="Preparing your session..." />
+      </Screen>
+    );
+  }
+
+  if (bootstrapError) {
+    return (
+      <Screen scroll={false}>
+        <ErrorState message={bootstrapError} onRetry={retryBootstrap} />
+      </Screen>
+    );
+  }
+
+  if (!user) return <Redirect href="/login" />;
+
+  if (!validId) {
+    return (
+      <Screen>
+        <Card>
+          <AppText variant="subtitle" style={{ color: colors.destructiveBright }}>Invalid log link</AppText>
+          <AppText variant="muted">The requested log ID is not valid.</AppText>
+          <Button variant="outline" onPress={() => router.replace('/logs')}>Back to logs</Button>
+        </Card>
+      </Screen>
+    );
+  }
+
   if (logQuery.isLoading) {
     return (
       <Screen scroll={false}>
         <LoadingState label="Loading log details..." />
+      </Screen>
+    );
+  }
+
+  if (logQuery.isError && !logQuery.data && getApiErrorStatus(logQuery.error) !== 404) {
+    return (
+      <Screen>
+        <ErrorState message={getApiErrorMessage(logQuery.error)} onRetry={() => logQuery.refetch()} />
       </Screen>
     );
   }

@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { AuthProvider } from '@/src/features/auth/AuthProvider';
 import { QueryLifecycleProvider } from '@/src/features/query/QueryLifecycleProvider';
+import { shouldRetryApiQuery } from '@/src/api/client';
 import { colors } from '@/src/theme/colors';
 
 export const unstable_settings = {
@@ -18,7 +19,7 @@ export default function RootLayout() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            retry: 1,
+            retry: shouldRetryApiQuery,
             staleTime: 10_000,
             refetchOnWindowFocus: false,
           },

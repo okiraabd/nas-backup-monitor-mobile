@@ -2,13 +2,14 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Filter, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
+import { getApiErrorMessage } from '@/src/api/client';
 import { logsApi } from '@/src/api/logs';
 import { monitorApi } from '@/src/api/monitor';
 import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { BackupStatusBadge } from '@/src/components/status-badges';
-import { AppText, Button, Card, EmptyState, Field, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
+import { AppText, Button, Card, EmptyState, ErrorState, Field, InlineError, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
 import { PillSelector } from '@/src/components/selectors';
 import { useRefreshOnScreenFocus } from '@/src/features/query/QueryLifecycleProvider';
 import { formatDateTimeWib, jakartaDateToUtcRange } from '@/src/lib/datetime';
@@ -56,19 +57,26 @@ export default function LogsScreen() {
         date_to: filters.date_to,
       }),
     getNextPageParam: (lastPage) => (lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined),
+    enabled: !dateText || Boolean(filters.date_from),
   });
 
   const items = logsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const isFiltered = status !== 'ALL' || nasId !== 'ALL' || jobName.trim() || dateText;
+  const dateError = Boolean(dateText && !filters.date_from);
 
   async function refetchScreen() {
-    await Promise.all([logsQuery.refetch(), nasQuery.refetch()]);
+    return Promise.all([
+      nasQuery.refetch(),
+      ...(!dateError ? [logsQuery.refetch()] : []),
+    ]);
   }
 
   async function refresh() {
     setIsManualRefreshing(true);
     try {
-      await refetchScreen();
+      const results = await refetchScreen();
+      const failedResult = results.find((result) => result.isError);
+      if (failedResult) Alert.alert('Refresh incomplete', getApiErrorMessage(failedResult.error));
     } finally {
       setIsManualRefreshing(false);
     }
@@ -87,6 +95,12 @@ export default function LogsScreen() {
         action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refresh()} />}
       />
       <UpdatedAt timestamp={Math.max(logsQuery.dataUpdatedAt, nasQuery.dataUpdatedAt)} />
+      {logsQuery.isRefetchError && logsQuery.data ? (
+        <InlineError
+          message={`Showing the last available backup logs. ${getApiErrorMessage(logsQuery.error)}`}
+          onRetry={() => void logsQuery.refetch()}
+        />
+      ) : null}
 
       <Card>
         <View style={styles.filterTitle}>
@@ -110,8 +124,14 @@ export default function LogsScreen() {
             ...(nasQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
           ]}
         />
+        {nasQuery.isError && !nasQuery.data ? (
+          <InlineError message={getApiErrorMessage(nasQuery.error)} onRetry={() => nasQuery.refetch()} />
+        ) : nasQuery.isRefetchError ? (
+          <InlineError message="The NAS filter list could not be refreshed." onRetry={() => nasQuery.refetch()} />
+        ) : null}
         <Field label="Job name" value={jobName} onChangeText={setJobName} placeholder="Search jobs..." />
         <Field label="Date (WIB)" value={dateText} onChangeText={setDateText} placeholder="YYYY-MM-DD" />
+        {dateError ? <AppText style={styles.errorText}>Enter a valid date in YYYY-MM-DD format.</AppText> : null}
         {isFiltered ? (
           <Button
             variant="ghost"
@@ -127,8 +147,12 @@ export default function LogsScreen() {
         ) : null}
       </Card>
 
-      {logsQuery.isLoading ? (
+      {dateError ? (
+        <EmptyState title="Invalid date" message="Correct the date filter to load matching backup logs." />
+      ) : logsQuery.isLoading ? (
         <LoadingState label="Loading backup logs..." />
+      ) : logsQuery.isError && !logsQuery.data ? (
+        <ErrorState message={getApiErrorMessage(logsQuery.error)} onRetry={() => logsQuery.refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
           title={isFiltered ? 'No results found' : 'No backup logs yet'}
@@ -162,7 +186,10 @@ export default function LogsScreen() {
             <Button
               variant="outline"
               disabled={logsQuery.isFetchingNextPage}
-              onPress={() => logsQuery.fetchNextPage()}
+              onPress={async () => {
+                const result = await logsQuery.fetchNextPage();
+                if (result.isError) Alert.alert('Unable to load more', getApiErrorMessage(result.error));
+              }}
             >
               {logsQuery.isFetchingNextPage ? 'Loading...' : 'Load more'}
             </Button>
@@ -214,5 +241,9 @@ const styles = StyleSheet.create({
   },
   center: {
     textAlign: 'center',
+  },
+  errorText: {
+    color: colors.destructiveBright,
+    fontSize: 12,
   },
 });

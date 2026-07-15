@@ -13,7 +13,7 @@ import { monitorApi } from '@/src/api/monitor';
 import { reportsApi } from '@/src/api/reports';
 import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { PillSelector } from '@/src/components/selectors';
-import { AppText, Button, Card, EmptyState, Field, IconButton, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
+import { AppText, Button, Card, EmptyState, ErrorState, Field, IconButton, InlineError, LoadingState, Screen, SectionHeader } from '@/src/components/ui';
 import { useRefreshOnScreenFocus } from '@/src/features/query/QueryLifecycleProvider';
 import { formatDateTimeWib, todayJakartaDate } from '@/src/lib/datetime';
 import { formatBytes } from '@/src/lib/format';
@@ -59,7 +59,8 @@ export default function ReportsScreen() {
   async function refreshReports() {
     setIsManualRefreshing(true);
     try {
-      await reportsQuery.refetch();
+      const result = await reportsQuery.refetch();
+      if (result.isError) Alert.alert('Refresh failed', getApiErrorMessage(result.error));
     } finally {
       setIsManualRefreshing(false);
     }
@@ -107,13 +108,22 @@ export default function ReportsScreen() {
   async function downloadReport(report: Report) {
     try {
       setDownloadingId(report.id);
+      if (!FileSystem.documentDirectory) throw new Error('App storage is unavailable on this device.');
       const safeName = report.filename.replace(/[^A-Za-z0-9_.-]/g, '_') || `report-${report.id}.pdf`;
       const destination = `${FileSystem.documentDirectory}${safeName}`;
       const result = await FileSystem.downloadAsync(reportsApi.downloadUrl(report.id), destination, {
         headers: reportsApi.downloadHeaders(),
       });
       if (result.status !== 200) {
-        throw new Error(result.status === 410 ? 'The report file is no longer available.' : `Download failed (${result.status}).`);
+        const message =
+          result.status === 401
+            ? 'Your session has expired. Please sign in again.'
+            : result.status === 403
+              ? 'You do not have permission to download this report.'
+              : result.status === 404 || result.status === 410
+                ? 'The report file is no longer available.'
+                : `Download failed (${result.status}).`;
+        throw new Error(message);
       }
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: report.filename });
@@ -138,11 +148,19 @@ export default function ReportsScreen() {
         </Button>
       </View>
       <UpdatedAt timestamp={reportsQuery.dataUpdatedAt} />
+      {reportsQuery.isRefetchError && reportsQuery.data ? (
+        <InlineError
+          message={`Showing the last available report list. ${getApiErrorMessage(reportsQuery.error)}`}
+          onRetry={() => void reportsQuery.refetch()}
+        />
+      ) : null}
 
       <Field label="Search" value={search} onChangeText={setSearch} placeholder="Search filenames..." />
 
       {reportsQuery.isLoading ? (
         <LoadingState label="Loading reports..." />
+      ) : reportsQuery.isError && !reportsQuery.data ? (
+        <ErrorState message={getApiErrorMessage(reportsQuery.error)} onRetry={() => reportsQuery.refetch()} />
       ) : filteredReports.length === 0 ? (
         <EmptyState
           title={search ? 'Report not found' : 'No reports yet'}
@@ -165,7 +183,7 @@ export default function ReportsScreen() {
                   </View>
                 </View>
                 <View style={styles.actions}>
-                  <IconButton disabled={downloadingId === report.id} onPress={() => downloadReport(report)}>
+                  <IconButton disabled={downloadingId !== null} onPress={() => downloadReport(report)}>
                     <Download color={colors.foreground} size={18} />
                   </IconButton>
                   {isAdmin ? (
@@ -244,6 +262,9 @@ export default function ReportsScreen() {
                       ...(nasQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
                     ]}
                   />
+                  {nasQuery.isError && !nasQuery.data ? (
+                    <InlineError message={getApiErrorMessage(nasQuery.error)} onRetry={() => nasQuery.refetch()} />
+                  ) : null}
                 </View>
               )}
             />

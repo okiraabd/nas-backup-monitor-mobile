@@ -83,6 +83,14 @@ export function jakartaDateToUtcRange(dateText: string) {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    return null;
+  }
   const start = new Date(Date.UTC(year, month - 1, day, -7, 0, 0, 0));
   const end = new Date(Date.UTC(year, month - 1, day + 1, -7, 0, 0, -1));
 

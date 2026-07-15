@@ -14,7 +14,12 @@ export function getAccessToken() {
 
 export async function setAccessToken(token: string) {
   accessToken = token;
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
+  try {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } catch (error) {
+    accessToken = null;
+    throw error;
+  }
 }
 
 export async function clearAccessToken() {

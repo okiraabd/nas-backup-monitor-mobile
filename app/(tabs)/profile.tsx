@@ -14,8 +14,13 @@ export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
 
   async function handleLogout() {
-    await logout();
-    router.replace('/login');
+    try {
+      await logout();
+    } catch {
+      Alert.alert('Logout incomplete', 'The local session could not be removed from secure storage.');
+    } finally {
+      router.replace('/login');
+    }
   }
 
   return (

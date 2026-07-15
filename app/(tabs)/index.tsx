@@ -2,14 +2,14 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { AlertCircle, Database, HardDrive, Server } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { logsApi } from '@/src/api/logs';
 import { monitorApi } from '@/src/api/monitor';
 import { ActivityBarChart } from '@/src/components/charts';
 import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
 import { BackupStatusBadge, FreshnessBadge, FreshnessDot } from '@/src/components/status-badges';
-import { AppText, Button, Card, EmptyState, ErrorState, LoadingState, ProgressBar, Screen, SectionHeader } from '@/src/components/ui';
+import { AppText, Button, Card, EmptyState, ErrorState, InlineError, LoadingState, ProgressBar, Screen, SectionHeader } from '@/src/components/ui';
 import { useRefreshOnScreenFocus, useScreenPollingInterval } from '@/src/features/query/QueryLifecycleProvider';
 import { formatRelative } from '@/src/lib/datetime';
 import { getApiErrorMessage } from '@/src/api/client';
@@ -53,7 +53,7 @@ export default function DashboardScreen() {
   });
 
   async function refetchAll() {
-    await Promise.all([
+    return Promise.all([
       summaryQuery.refetch(),
       activityQuery.refetch(),
       failedQuery.refetch(),
@@ -65,7 +65,11 @@ export default function DashboardScreen() {
   async function refreshAll() {
     setIsManualRefreshing(true);
     try {
-      await refetchAll();
+      const results = await refetchAll();
+      const failedResult = results.find((result) => result.isError);
+      if (failedResult) {
+        Alert.alert('Refresh incomplete', getApiErrorMessage(failedResult.error));
+      }
     } finally {
       setIsManualRefreshing(false);
     }
@@ -80,6 +84,9 @@ export default function DashboardScreen() {
     nasQuery.dataUpdatedAt,
     ...latestLogQueries.map((query) => query.dataUpdatedAt),
   );
+  const refreshError = [summaryQuery, activityQuery, failedQuery, nasQuery, ...latestLogQueries].find(
+    (query) => query.isRefetchError,
+  )?.error;
 
   return (
     <Screen
@@ -92,10 +99,16 @@ export default function DashboardScreen() {
         action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refreshAll()} />}
       />
       <UpdatedAt timestamp={updatedAt} />
+      {refreshError ? (
+        <InlineError
+          message={`Showing the last available dashboard data. ${getApiErrorMessage(refreshError)}`}
+          onRetry={() => void refreshAll()}
+        />
+      ) : null}
 
       {summaryQuery.isLoading ? (
         <LoadingState />
-      ) : summaryQuery.isError ? (
+      ) : summaryQuery.isError && !summaryQuery.data ? (
         <ErrorState message={getApiErrorMessage(summaryQuery.error)} onRetry={() => summaryQuery.refetch()} />
       ) : (
         <View style={styles.grid}>
@@ -139,12 +152,20 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {activityQuery.isLoading ? <LoadingState label="Loading trends..." /> : <ActivityBarChart days={activityQuery.data?.days} />}
+      {activityQuery.isLoading ? (
+        <LoadingState label="Loading trends..." />
+      ) : activityQuery.isError && !activityQuery.data ? (
+        <ErrorState message={getApiErrorMessage(activityQuery.error)} onRetry={() => activityQuery.refetch()} />
+      ) : (
+        <ActivityBarChart days={activityQuery.data?.days} />
+      )}
 
       <Card>
         <AppText variant="subtitle">Recent Failed Backups</AppText>
         {failedQuery.isLoading ? (
           <LoadingState label="Loading failed logs..." />
+        ) : failedQuery.isError && !failedQuery.data ? (
+          <InlineError message={getApiErrorMessage(failedQuery.error)} onRetry={() => failedQuery.refetch()} />
         ) : failedQuery.data?.items.length === 0 ? (
           <EmptyState title="No failed backups" message="Everything looks good in the latest results." />
         ) : (
@@ -168,11 +189,14 @@ export default function DashboardScreen() {
         <AppText variant="subtitle">Latest Backup by NAS</AppText>
         {nasQuery.isLoading ? (
           <LoadingState label="Loading NAS..." />
+        ) : nasQuery.isError && !nasQuery.data ? (
+          <InlineError message={getApiErrorMessage(nasQuery.error)} onRetry={() => nasQuery.refetch()} />
         ) : nasQuery.data?.items.length === 0 ? (
           <EmptyState title="No NAS found" message="The collector has not sent any NAS metrics yet." />
         ) : (
           nasQuery.data?.items.map((nas, index) => {
-            const latestLog = latestLogQueries[index]?.data?.items[0];
+            const latestQuery = latestLogQueries[index];
+            const latestLog = latestQuery?.data?.items[0];
             return (
               <View key={nas.source_id} style={styles.nasRow}>
                 <View style={styles.nasTitle}>
@@ -182,7 +206,9 @@ export default function DashboardScreen() {
                     <AppText variant="muted">{nas.source_id}</AppText>
                   </View>
                 </View>
-                {latestLog ? (
+                {latestQuery?.isError && !latestQuery.data ? (
+                  <AppText style={styles.errorText}>Latest backup unavailable.</AppText>
+                ) : latestLog ? (
                   <View style={styles.latestLine}>
                     <BackupStatusBadge status={latestLog.status} acknowledged={latestLog.acknowledged} />
                     <AppText variant="muted">{formatRelative(latestLog.created_at)}</AppText>
@@ -290,5 +316,8 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  errorText: {
+    color: colors.destructiveBright,
   },
 });

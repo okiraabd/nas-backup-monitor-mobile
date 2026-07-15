@@ -1,18 +1,28 @@
 import { Redirect, Tabs } from 'expo-router';
 import { ChartNoAxesCombined, FileText, History, LayoutDashboard, UserCircle } from 'lucide-react-native';
 
-import { LoadingState, Screen } from '@/src/components/ui';
+import { ErrorState, LoadingState, Screen } from '@/src/components/ui';
 import { useAuthStore } from '@/src/store/auth-store';
 import { colors } from '@/src/theme/colors';
 
 export default function TabLayout() {
   const user = useAuthStore((state) => state.user);
   const bootstrapped = useAuthStore((state) => state.bootstrapped);
+  const bootstrapError = useAuthStore((state) => state.bootstrapError);
+  const retryBootstrap = useAuthStore((state) => state.retryBootstrap);
 
   if (!bootstrapped) {
     return (
       <Screen scroll={false}>
         <LoadingState label="Preparing the dashboard..." />
+      </Screen>
+    );
+  }
+
+  if (bootstrapError) {
+    return (
+      <Screen scroll={false}>
+        <ErrorState message={bootstrapError} onRetry={retryBootstrap} />
       </Screen>
     );
   }
