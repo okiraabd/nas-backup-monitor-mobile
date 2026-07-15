@@ -103,8 +103,9 @@ bersih. Nilai environment Expo dibaca saat bundle dibuat:
 npx expo start --clear
 ~~~
 
-HTTPS wajib untuk deployment publik. `usesCleartextTraffic` masih aktif pada
-konfigurasi Android agar backend HTTP lokal dapat dipakai saat development.
+HTTPS wajib untuk deployment publik. Build Android standalone menonaktifkan
+cleartext traffic; profil APK dan AAB menggunakan API publik HTTPS. Expo Go
+tetap dapat digunakan untuk alur development lokal yang dijelaskan di atas.
 
 ## Menjalankan aplikasi
 
@@ -131,6 +132,63 @@ Perintah npm yang tersedia:
 | `npm run web` | Menjalankan target web untuk pemeriksaan dasar. |
 | `npm run typecheck` | Memeriksa TypeScript tanpa membuat output. |
 | `npm run lint` | Menjalankan ESLint melalui Expo. |
+
+## Membuat APK Android
+
+Profil `preview` pada `eas.json` menghasilkan APK standalone yang dapat disimpan,
+dipindahkan ke perangkat lain, dan di-install tanpa Expo Go. Profil ini sudah
+memakai API publik `https://api-monitor.qra.web.id/api`.
+
+Install EAS CLI dan login dengan akun Expo yang memiliki akses ke owner
+`qra404s-team`:
+
+~~~powershell
+npm install --global eas-cli
+eas login
+~~~
+
+Jalankan build dari root proyek mobile:
+
+~~~powershell
+eas build --platform android --profile preview
+~~~
+
+Pada build Android pertama, izinkan EAS membuat dan menyimpan Android keystore.
+Setelah build selesai, EAS menampilkan URL artifact. Buka URL tersebut dan simpan
+file `.apk` ke komputer.
+
+Untuk instalasi melalui USB:
+
+~~~powershell
+adb devices
+adb install -r .\path\to\nas-backup-monitor.apk
+~~~
+
+Alternatifnya, kirim APK ke perangkat, buka file tersebut, lalu izinkan
+`Install unknown apps` untuk aplikasi file manager atau browser yang digunakan.
+Android mungkin menampilkan peringatan karena APK tidak berasal dari Play Store.
+
+Profil `production` menghasilkan AAB untuk Google Play dan tidak dapat di-install
+langsung seperti APK:
+
+~~~powershell
+eas build --platform android --profile production
+~~~
+
+Nama aplikasi, package Android, ikon, dan splash yang digunakan build:
+
+| Properti | Nilai |
+|---|---|
+| Nama launcher | NAS Backup Monitor |
+| Android package | `id.web.qra.nasbackupmonitor` |
+| Ikon utama | `assets/images/app-icon-v4.png` |
+| Adaptive foreground | `assets/images/adaptive-foreground-v2.png` |
+| Splash mark | `assets/images/splash-mark-v2.png` |
+| Splash background | `#020817` |
+
+Jangan mengubah Android package setelah APK mulai didistribusikan. Android akan
+menganggap package berbeda sebagai aplikasi yang berbeda. Simpan akses akun EAS
+dan keystore karena update berikutnya harus ditandatangani dengan key yang sama.
 
 ## Autentikasi
 
