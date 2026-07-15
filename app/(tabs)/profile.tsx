@@ -8,7 +8,7 @@ import { formatLongDateTimeWib } from '@/src/lib/datetime';
 import { logout } from '@/src/features/auth/AuthProvider';
 import { AppText, Button, Card, Screen, SectionHeader } from '@/src/components/ui';
 import { useAuthStore } from '@/src/store/auth-store';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   profileHeader: {
     flexDirection: 'row',

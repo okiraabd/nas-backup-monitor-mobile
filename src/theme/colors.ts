@@ -31,3 +31,6 @@ export const radius = {
   md: 8,
   lg: 10,
 } as const;
+
+/** Padding bawah untuk screen di dalam tab navigator (menyesuaikan tinggi tab bar). */
+export const TAB_BOTTOM_PADDING = 100;

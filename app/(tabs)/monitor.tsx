@@ -15,7 +15,7 @@ import { useRefreshOnScreenFocus, useScreenPollingInterval } from '@/src/feature
 import { formatBytes, formatUptimeSeconds, percentText } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
 import { ACTIVE_REFRESH_MS } from '@/src/lib/refresh';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 
 const TIMEFRAMES = [
   { label: '1h', value: 1 },
@@ -30,7 +30,7 @@ export default function MonitorScreen() {
   const [segment, setSegment] = useState<'nas' | 'ceph'>('nas');
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const queryClient = useQueryClient();
-  const activeQueryKey = segment === 'nas' ? ['monitor', 'nas'] : ['monitor', 'ceph'];
+  const activeQueryKey = segment === 'nas' ? queryKeys.nasList : queryKeys.cephBase;
   const activeFetchCount = useIsFetching({ queryKey: activeQueryKey });
 
   async function refetchActiveSegment() {
@@ -126,9 +126,8 @@ function NasMonitor() {
     previousSnapshot.current = { sourceId: selectedNas, collectedAt };
   }, [refetchCpu, refetchRam, selectedNas, snapshotQuery.data?.last_collected_at]);
 
-  const nasOptions = [
-    ...(nasListQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
-  ];
+  const nasOptions =
+    nasListQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? [];
   const refreshError = [nasListQuery, snapshotQuery, cpuQuery, ramQuery].find(
     (query) => query.isRefetchError,
   )?.error;
@@ -344,7 +343,7 @@ function MetricCard({
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   stack: {
     gap: spacing.lg,

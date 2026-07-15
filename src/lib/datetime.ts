@@ -91,6 +91,8 @@ export function jakartaDateToUtcRange(dateText: string) {
   ) {
     return null;
   }
+  // WIB = UTC+7, jadi tengah malam Jakarta (00:00 WIB) = 17:00 UTC hari sebelumnya.
+  // Offset -7 pada argumen jam di Date.UTC mengekspresikan selisih ini.
   const start = new Date(Date.UTC(year, month - 1, day, -7, 0, 0, 0));
   const end = new Date(Date.UTC(year, month - 1, day + 1, -7, 0, 0, -1));
 

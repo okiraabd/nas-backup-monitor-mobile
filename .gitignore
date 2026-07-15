@@ -39,6 +39,14 @@ yarn-error.*
 
 app-example
 
+# Claude Code — internal tooling files, tidak relevan untuk repo publik
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# File review internal — hanya untuk referensi pribadi developer
+CODE_REVIEW.md
+
 # generated native folders
 /ios
 /android

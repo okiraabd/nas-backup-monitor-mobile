@@ -15,7 +15,7 @@ import { formatRelative } from '@/src/lib/datetime';
 import { getApiErrorMessage } from '@/src/api/client';
 import { queryKeys } from '@/src/lib/query-keys';
 import { ACTIVE_REFRESH_MS, SLOW_REFRESH_MS } from '@/src/lib/refresh';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 
 export default function DashboardScreen() {
   const refreshInterval = useScreenPollingInterval(ACTIVE_REFRESH_MS);
@@ -261,7 +261,7 @@ function KpiCard({
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   grid: {
     flexDirection: 'row',

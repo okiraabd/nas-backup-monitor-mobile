@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 
 import { AppText, Card, EmptyState } from '@/src/components/ui';
@@ -143,11 +143,6 @@ function LegendDot({ color, label }: { color: string; label: string }) {
       <AppText variant="muted">{label}</AppText>
     </View>
   );
-}
-
-export function useMeasuredWidth() {
-  const onLayout = (_event: LayoutChangeEvent) => undefined;
-  return { onLayout };
 }
 
 const styles = StyleSheet.create({

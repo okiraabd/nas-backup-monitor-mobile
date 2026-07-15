@@ -15,7 +15,7 @@ import { useRefreshOnScreenFocus } from '@/src/features/query/QueryLifecycleProv
 import { formatDateTimeWib, jakartaDateToUtcRange } from '@/src/lib/datetime';
 import { formatDurationSeconds } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 
 const PAGE_SIZE = 15;
 
@@ -206,7 +206,7 @@ export default function LogsScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   filterTitle: {
     flexDirection: 'row',

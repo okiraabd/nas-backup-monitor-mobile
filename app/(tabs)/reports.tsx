@@ -9,6 +9,7 @@ import { Alert, Modal, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { getApiErrorMessage } from '@/src/api/client';
+import { modalStyles } from '@/src/components/modal-styles';
 import { monitorApi } from '@/src/api/monitor';
 import { reportsApi } from '@/src/api/reports';
 import { RefreshButton, UpdatedAt } from '@/src/components/refresh-controls';
@@ -19,7 +20,7 @@ import { formatDateTimeWib, todayJakartaDate } from '@/src/lib/datetime';
 import { formatBytes } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
 import { useAuthStore } from '@/src/store/auth-store';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 import type { Report } from '@/src/types/api';
 
 const generateSchema = z
@@ -213,16 +214,16 @@ export default function ReportsScreen() {
       )}
 
       <Modal visible={generateOpen} transparent animationType="slide" onRequestClose={() => setGenerateOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <Card style={styles.modalCard}>
+        <View style={modalStyles.backdrop}>
+          <Card style={modalStyles.card}>
             <AppText variant="subtitle">Generate Report</AppText>
             <Controller
               control={form.control}
               name="date_from"
               render={({ field, fieldState }) => (
-                <View style={styles.fieldWrap}>
+                <View style={modalStyles.fieldWrap}>
                   <Field label="Start date" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
-                  {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
+                  {fieldState.error ? <AppText style={modalStyles.error}>{fieldState.error.message}</AppText> : null}
                 </View>
               )}
             />
@@ -230,9 +231,9 @@ export default function ReportsScreen() {
               control={form.control}
               name="date_to"
               render={({ field, fieldState }) => (
-                <View style={styles.fieldWrap}>
+                <View style={modalStyles.fieldWrap}>
                   <Field label="End date" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
-                  {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
+                  {fieldState.error ? <AppText style={modalStyles.error}>{fieldState.error.message}</AppText> : null}
                 </View>
               )}
             />
@@ -252,7 +253,7 @@ export default function ReportsScreen() {
               control={form.control}
               name="nas_id"
               render={({ field }) => (
-                <View style={styles.fieldWrap}>
+                <View style={modalStyles.fieldWrap}>
                   <AppText variant="label">NAS filter</AppText>
                   <PillSelector
                     value={field.value}
@@ -268,7 +269,7 @@ export default function ReportsScreen() {
                 </View>
               )}
             />
-            <View style={styles.modalActions}>
+            <View style={modalStyles.actions}>
               <Button variant="outline" onPress={() => setGenerateOpen(false)}>
                 Cancel
               </Button>
@@ -285,7 +286,7 @@ export default function ReportsScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   stack: {
     gap: spacing.md,
@@ -324,26 +325,5 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.white,
     fontWeight: '800',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: `${colors.black}99`,
-    justifyContent: 'flex-end',
-    padding: spacing.lg,
-  },
-  modalCard: {
-    gap: spacing.lg,
-  },
-  fieldWrap: {
-    gap: spacing.xs,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  error: {
-    color: colors.destructiveBright,
-    fontSize: 12,
   },
 });

@@ -8,6 +8,7 @@ import { Alert, Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { getApiErrorMessage, getApiErrorStatus } from '@/src/api/client';
+import { modalStyles } from '@/src/components/modal-styles';
 import { logsApi } from '@/src/api/logs';
 import { BackupStatusBadge, KeyValue } from '@/src/components/status-badges';
 import { AppText, Button, Card, ErrorState, Field, LoadingState, Screen } from '@/src/components/ui';
@@ -15,7 +16,7 @@ import { formatDateTimeWib, formatLongDateTimeWib } from '@/src/lib/datetime';
 import { formatBytes, formatDurationSeconds } from '@/src/lib/format';
 import { queryKeys } from '@/src/lib/query-keys';
 import { useAuthStore } from '@/src/store/auth-store';
-import { colors, spacing } from '@/src/theme/colors';
+import { TAB_BOTTOM_PADDING, colors, spacing } from '@/src/theme/colors';
 
 const ackSchema = z.object({
   remark: z.string().min(1, 'Remark is required').max(2000, 'Remark is too long'),
@@ -219,21 +220,21 @@ export default function LogDetailScreen() {
       ) : null}
 
       <Modal visible={ackOpen} transparent animationType="slide" onRequestClose={() => setAckOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <Card style={styles.modalCard}>
+        <View style={modalStyles.backdrop}>
+          <Card style={modalStyles.card}>
             <AppText variant="subtitle">Acknowledge Failure</AppText>
             <AppText variant="muted">Add a remark describing how this failure was handled.</AppText>
             <Controller
               control={form.control}
               name="remark"
               render={({ field, fieldState }) => (
-                <View style={{ gap: spacing.xs }}>
+                <View style={modalStyles.fieldWrap}>
                   <Field label="Remark" value={field.value} onChangeText={field.onChange} multiline />
-                  {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
+                  {fieldState.error ? <AppText style={modalStyles.error}>{fieldState.error.message}</AppText> : null}
                 </View>
               )}
             />
-            <View style={styles.modalActions}>
+            <View style={modalStyles.actions}>
               <Button variant="outline" onPress={() => setAckOpen(false)}>
                 Cancel
               </Button>
@@ -250,7 +251,7 @@ export default function LogDetailScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    paddingBottom: TAB_BOTTOM_PADDING,
   },
   headerRow: {
     flexDirection: 'row',
@@ -292,23 +293,5 @@ const styles = StyleSheet.create({
   deleteText: {
     color: colors.white,
     fontWeight: '800',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: `${colors.black}99`,
-    justifyContent: 'flex-end',
-    padding: spacing.lg,
-  },
-  modalCard: {
-    gap: spacing.lg,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  error: {
-    color: colors.destructiveBright,
-    fontSize: 12,
   },
 });

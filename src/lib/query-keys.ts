@@ -3,6 +3,7 @@ export const queryKeys = {
   summary: ['monitor', 'summary'] as const,
   activity: ['monitor', 'activity'] as const,
   nasList: ['monitor', 'nas'] as const,
+  cephBase: ['monitor', 'ceph'] as const,
   nasSnapshot: (id: string) => ['monitor', 'nas', id, 'snapshot'] as const,
   nasHistory: (id: string, metric: string, hours: number) =>
     ['monitor', 'nas', id, 'history', metric, hours] as const,

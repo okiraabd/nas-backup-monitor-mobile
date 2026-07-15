@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api-monitor.qra.web.id/api"
+        "EXPO_PUBLIC_API_BASE_URL": "https://your-api-host/api"
       }
     },
     "production": {
@@ -19,7 +19,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api-monitor.qra.web.id/api"
+        "EXPO_PUBLIC_API_BASE_URL": "https://your-api-host/api"
       }
     }
   }
