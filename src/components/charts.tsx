@@ -44,7 +44,7 @@ export function MetricLineChart({ title, points = [], isPercentage = true, heigh
   );
 
   if (chartData.length === 0) {
-    return <EmptyState title="Tidak ada data historis" message={title} />;
+    return <EmptyState title="No historical data" message={title} />;
   }
 
   return (
@@ -101,13 +101,13 @@ export function ActivityBarChart({ days = [] }: { days?: ActivityDay[] }) {
   ]);
 
   if (data.length === 0) {
-    return <EmptyState title="Tidak ada tren backup" message="Belum ada data 7 hari terakhir." />;
+    return <EmptyState title="No backup trend" message="No data is available for the last 7 days." />;
   }
 
   return (
     <Card>
       <View style={styles.legendRow}>
-        <AppText variant="subtitle">Tren Backup 7 Hari</AppText>
+        <AppText variant="subtitle">7-Day Backup Trend</AppText>
         <View style={styles.legendItems}>
           <LegendDot color={colors.success} label="Success" />
           <LegendDot color={colors.destructiveBright} label="Failed" />

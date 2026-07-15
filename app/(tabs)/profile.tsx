@@ -20,7 +20,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <SectionHeader title="Profile" subtitle="Sesi dan informasi aplikasi." />
+      <SectionHeader title="Profile" subtitle="Session and application information." />
 
       <Card>
         <View style={styles.profileHeader}>
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
           <AppText style={styles.bold}>{user?.role ?? '-'}</AppText>
         </View>
         <AppText variant="muted">
-          Last login: {user?.last_login_at ? formatLongDateTimeWib(user.last_login_at) : 'Tidak diketahui'}
+          Last login: {user?.last_login_at ? formatLongDateTimeWib(user.last_login_at) : 'Unknown'}
         </AppText>
       </Card>
 
@@ -50,8 +50,8 @@ export default function ProfileScreen() {
       <Button
         variant="destructive"
         onPress={() =>
-          Alert.alert('Logout?', 'Token sesi ini akan direvoke dari server.', [
-            { text: 'Batal', style: 'cancel' },
+          Alert.alert('Log out?', 'This session token will be revoked on the server.', [
+            { text: 'Cancel', style: 'cancel' },
             { text: 'Logout', style: 'destructive', onPress: handleLogout },
           ])
         }

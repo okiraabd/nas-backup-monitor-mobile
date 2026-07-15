@@ -55,7 +55,7 @@ export function formatLongDateTimeWib(value: DateInput) {
   const date = toValidDate(value);
   if (!date) return '-';
 
-  return `${new Intl.DateTimeFormat('id-ID', {
+  return `${new Intl.DateTimeFormat('en-US', {
     timeZone: APP_TIME_ZONE,
     dateStyle: 'medium',
     timeStyle: 'medium',
@@ -67,13 +67,13 @@ export function formatRelative(value: DateInput) {
   if (!date) return '-';
 
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s lalu`;
+  if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m lalu`;
+  if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}j lalu`;
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  return `${days}h lalu`;
+  return `${days}d ago`;
 }
 
 export function jakartaDateToUtcRange(dateText: string) {

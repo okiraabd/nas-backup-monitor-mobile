@@ -18,7 +18,7 @@ import { useAuthStore } from '@/src/store/auth-store';
 import { colors, spacing } from '@/src/theme/colors';
 
 const ackSchema = z.object({
-  remark: z.string().min(1, 'Remark wajib diisi').max(2000, 'Remark terlalu panjang'),
+  remark: z.string().min(1, 'Remark is required').max(2000, 'Remark is too long'),
 });
 
 type AckValues = z.infer<typeof ackSchema>;
@@ -48,7 +48,7 @@ export default function LogDetailScreen() {
       setAckOpen(false);
       form.reset();
     },
-    onError: (error) => Alert.alert('Acknowledge gagal', getApiErrorMessage(error)),
+    onError: (error) => Alert.alert('Acknowledge failed', getApiErrorMessage(error)),
   });
 
   const deleteMutation = useMutation({
@@ -57,13 +57,13 @@ export default function LogDetailScreen() {
       void queryClient.invalidateQueries({ queryKey: ['logs'] });
       router.replace('/logs');
     },
-    onError: (error) => Alert.alert('Hapus gagal', getApiErrorMessage(error)),
+    onError: (error) => Alert.alert('Delete failed', getApiErrorMessage(error)),
   });
 
   if (logQuery.isLoading) {
     return (
       <Screen scroll={false}>
-        <LoadingState label="Memuat detail log..." />
+        <LoadingState label="Loading log details..." />
       </Screen>
     );
   }
@@ -73,7 +73,7 @@ export default function LogDetailScreen() {
       <Screen>
         <Card>
           <AppText variant="subtitle" style={{ color: colors.destructiveBright }}>
-            Log tidak ditemukan
+            Log not found
           </AppText>
         </Card>
       </Screen>
@@ -104,7 +104,7 @@ export default function LogDetailScreen() {
               Backup Failed
             </AppText>
           </View>
-          <AppText style={{ color: colors.destructiveBright }}>{log.message || 'Tidak ada pesan error.'}</AppText>
+          <AppText style={{ color: colors.destructiveBright }}>{log.message || 'No error message provided.'}</AppText>
           {canAcknowledge ? (
             <Button variant="destructive" onPress={() => setAckOpen(true)}>
               Acknowledge
@@ -119,9 +119,9 @@ export default function LogDetailScreen() {
             <CheckCircle2 color={colors.success} size={22} />
             <AppText variant="subtitle">Acknowledged</AppText>
           </View>
-          <AppText>{log.remark || 'Tidak ada remark.'}</AppText>
+          <AppText>{log.remark || 'No remark provided.'}</AppText>
           <AppText variant="muted">
-            {log.acknowledged_at ? formatLongDateTimeWib(log.acknowledged_at) : 'Waktu tidak diketahui'}
+            {log.acknowledged_at ? formatLongDateTimeWib(log.acknowledged_at) : 'Time unknown'}
           </AppText>
         </Card>
       ) : null}
@@ -164,14 +164,14 @@ export default function LogDetailScreen() {
           variant="destructive"
           disabled={deleteMutation.isPending}
           onPress={() =>
-            Alert.alert('Hapus log?', 'Operasi ini permanen dan tidak dapat dibatalkan.', [
-              { text: 'Batal', style: 'cancel' },
-              { text: 'Hapus', style: 'destructive', onPress: () => deleteMutation.mutate() },
+            Alert.alert('Delete log?', 'This action is permanent and cannot be undone.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate() },
             ])
           }
         >
           <Trash2 color={colors.white} size={17} />
-          <AppText style={styles.deleteText}>{deleteMutation.isPending ? 'Menghapus...' : 'Delete Log'}</AppText>
+          <AppText style={styles.deleteText}>{deleteMutation.isPending ? 'Deleting...' : 'Delete Log'}</AppText>
         </Button>
       ) : null}
 
@@ -179,7 +179,7 @@ export default function LogDetailScreen() {
         <View style={styles.modalBackdrop}>
           <Card style={styles.modalCard}>
             <AppText variant="subtitle">Acknowledge Failure</AppText>
-            <AppText variant="muted">Tambahkan remark tentang penanganan kegagalan ini.</AppText>
+            <AppText variant="muted">Add a remark describing how this failure was handled.</AppText>
             <Controller
               control={form.control}
               name="remark"
@@ -192,10 +192,10 @@ export default function LogDetailScreen() {
             />
             <View style={styles.modalActions}>
               <Button variant="outline" onPress={() => setAckOpen(false)}>
-                Batal
+                Cancel
               </Button>
               <Button disabled={ackMutation.isPending} onPress={form.handleSubmit((values) => ackMutation.mutate(values))}>
-                {ackMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                {ackMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
             </View>
           </Card>

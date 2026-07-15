@@ -16,7 +16,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await clearAccessToken();
     setUser(null);
     if (showMessage) {
-      Alert.alert('Sesi berakhir', 'Silakan masuk kembali.');
+      Alert.alert('Session expired', 'Please sign in again.');
     }
   }, [setUser]);
 
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 export async function persistLogin(token: string, user: User) {
   if (!isHumanRole(user.role)) {
     await clearAccessToken();
-    throw new Error('Akun ini tidak diizinkan memakai aplikasi mobile.');
+    throw new Error('This account is not allowed to use the mobile app.');
   }
   await setAccessToken(token);
   useAuthStore.getState().setUser(user);

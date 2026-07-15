@@ -10,7 +10,7 @@ export default function IndexRoute() {
   if (!bootstrapped) {
     return (
       <Screen scroll={false}>
-        <LoadingState label="Menyiapkan sesi..." />
+        <LoadingState label="Preparing your session..." />
       </Screen>
     );
   }

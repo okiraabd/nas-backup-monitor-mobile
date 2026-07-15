@@ -24,13 +24,13 @@ import type { Report } from '@/src/types/api';
 
 const generateSchema = z
   .object({
-    date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Gunakan format YYYY-MM-DD'),
-    date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Gunakan format YYYY-MM-DD'),
+    date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the YYYY-MM-DD format'),
+    date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the YYYY-MM-DD format'),
     nas_id: z.string(),
     custom_name: z.string().optional(),
   })
   .refine((value) => value.date_to >= value.date_from, {
-    message: 'Tanggal akhir harus sama atau setelah tanggal awal',
+    message: 'End date must be the same as or later than the start date',
     path: ['date_to'],
   });
 
@@ -95,13 +95,13 @@ export default function ReportsScreen() {
       setGenerateOpen(false);
       form.reset();
     },
-    onError: (error) => Alert.alert('Generate gagal', getApiErrorMessage(error)),
+    onError: (error) => Alert.alert('Generation failed', getApiErrorMessage(error)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => reportsApi.delete(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.reports }),
-    onError: (error) => Alert.alert('Hapus gagal', getApiErrorMessage(error)),
+    onError: (error) => Alert.alert('Delete failed', getApiErrorMessage(error)),
   });
 
   async function downloadReport(report: Report) {
@@ -113,15 +113,15 @@ export default function ReportsScreen() {
         headers: reportsApi.downloadHeaders(),
       });
       if (result.status !== 200) {
-        throw new Error(result.status === 410 ? 'File report tidak tersedia lagi.' : `Download gagal (${result.status}).`);
+        throw new Error(result.status === 410 ? 'The report file is no longer available.' : `Download failed (${result.status}).`);
       }
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: report.filename });
       } else {
-        Alert.alert('Download selesai', result.uri);
+        Alert.alert('Download complete', result.uri);
       }
     } catch (error) {
-      Alert.alert('Download gagal', error instanceof Error ? error.message : 'Tidak dapat mengunduh report.');
+      Alert.alert('Download failed', error instanceof Error ? error.message : 'Unable to download the report.');
     } finally {
       setDownloadingId(null);
     }
@@ -129,7 +129,7 @@ export default function ReportsScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <SectionHeader title="Reports" subtitle="Generate dan unduh PDF backup." />
+      <SectionHeader title="Reports" subtitle="Generate and download backup PDFs." />
       <View style={styles.toolbar}>
         <RefreshButton refreshing={isManualRefreshing} onPress={() => void refreshReports()} />
         <Button onPress={() => setGenerateOpen(true)}>
@@ -139,14 +139,14 @@ export default function ReportsScreen() {
       </View>
       <UpdatedAt timestamp={reportsQuery.dataUpdatedAt} />
 
-      <Field label="Search" value={search} onChangeText={setSearch} placeholder="Cari filename..." />
+      <Field label="Search" value={search} onChangeText={setSearch} placeholder="Search filenames..." />
 
       {reportsQuery.isLoading ? (
-        <LoadingState label="Memuat reports..." />
+        <LoadingState label="Loading reports..." />
       ) : filteredReports.length === 0 ? (
         <EmptyState
-          title={search ? 'Report tidak ditemukan' : 'Belum ada report'}
-          message={search ? 'Coba kata kunci lain.' : 'Buat report PDF dari tombol Generate.'}
+          title={search ? 'Report not found' : 'No reports yet'}
+          message={search ? 'Try a different search term.' : 'Generate a PDF report using the Generate button.'}
         />
       ) : (
         <View style={styles.stack}>
@@ -160,7 +160,7 @@ export default function ReportsScreen() {
                       {report.filename}
                     </AppText>
                     <AppText variant="muted">
-                      {report.date_from} sampai {report.date_to}
+                      {report.date_from} to {report.date_to}
                     </AppText>
                   </View>
                 </View>
@@ -173,9 +173,9 @@ export default function ReportsScreen() {
                       destructive
                       disabled={deleteMutation.isPending}
                       onPress={() =>
-                        Alert.alert('Hapus report?', 'File dan metadata report akan dihapus.', [
-                          { text: 'Batal', style: 'cancel' },
-                          { text: 'Hapus', style: 'destructive', onPress: () => deleteMutation.mutate(report.id) },
+                        Alert.alert('Delete report?', 'The report file and its metadata will be deleted.', [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(report.id) },
                         ])
                       }
                     >
@@ -203,7 +203,7 @@ export default function ReportsScreen() {
               name="date_from"
               render={({ field, fieldState }) => (
                 <View style={styles.fieldWrap}>
-                  <Field label="Tanggal awal" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
+                  <Field label="Start date" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
                   {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
                 </View>
               )}
@@ -213,7 +213,7 @@ export default function ReportsScreen() {
               name="date_to"
               render={({ field, fieldState }) => (
                 <View style={styles.fieldWrap}>
-                  <Field label="Tanggal akhir" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
+                  <Field label="End date" value={field.value} onChangeText={field.onChange} placeholder="YYYY-MM-DD" />
                   {fieldState.error ? <AppText style={styles.error}>{fieldState.error.message}</AppText> : null}
                 </View>
               )}
@@ -223,7 +223,7 @@ export default function ReportsScreen() {
               name="custom_name"
               render={({ field }) => (
                 <Field
-                  label="Nama report opsional"
+                  label="Optional report name"
                   value={field.value ?? ''}
                   onChangeText={field.onChange}
                   placeholder="monthly_backup"
@@ -249,7 +249,7 @@ export default function ReportsScreen() {
             />
             <View style={styles.modalActions}>
               <Button variant="outline" onPress={() => setGenerateOpen(false)}>
-                Batal
+                Cancel
               </Button>
               <Button disabled={generateMutation.isPending} onPress={form.handleSubmit((values) => generateMutation.mutate(values))}>
                 {generateMutation.isPending ? 'Generating...' : 'Generate'}

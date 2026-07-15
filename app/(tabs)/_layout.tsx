@@ -12,7 +12,7 @@ export default function TabLayout() {
   if (!bootstrapped) {
     return (
       <Screen scroll={false}>
-        <LoadingState label="Menyiapkan dashboard..." />
+        <LoadingState label="Preparing the dashboard..." />
       </Screen>
     );
   }

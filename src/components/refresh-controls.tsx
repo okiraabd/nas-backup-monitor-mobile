@@ -19,7 +19,7 @@ export function RefreshButton({
   return (
     <Button variant={variant} disabled={refreshing} onPress={onPress}>
       <RefreshCw color={foreground} size={16} />
-      <AppText style={[styles.label, { color: foreground }]}>{refreshing ? 'Memperbarui...' : 'Refresh'}</AppText>
+      <AppText style={[styles.label, { color: foreground }]}>{refreshing ? 'Refreshing...' : 'Refresh'}</AppText>
     </Button>
   );
 }
@@ -28,7 +28,7 @@ export function UpdatedAt({ timestamp }: { timestamp?: number }) {
   if (!timestamp) return null;
   return (
     <AppText variant="muted" style={styles.updatedAt}>
-      Diperbarui {formatDateTimeWib(new Date(timestamp).toISOString())}
+      Updated {formatDateTimeWib(new Date(timestamp).toISOString())}
     </AppText>
   );
 }

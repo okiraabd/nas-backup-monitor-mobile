@@ -88,7 +88,7 @@ export default function DashboardScreen() {
     >
       <SectionHeader
         title="Dashboard"
-        subtitle="Ringkasan kondisi backup NAS dan Ceph."
+        subtitle="NAS backup and Ceph status overview."
         action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refreshAll()} />}
       />
       <UpdatedAt timestamp={updatedAt} />
@@ -139,14 +139,14 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {activityQuery.isLoading ? <LoadingState label="Memuat tren..." /> : <ActivityBarChart days={activityQuery.data?.days} />}
+      {activityQuery.isLoading ? <LoadingState label="Loading trends..." /> : <ActivityBarChart days={activityQuery.data?.days} />}
 
       <Card>
         <AppText variant="subtitle">Recent Failed Backups</AppText>
         {failedQuery.isLoading ? (
-          <LoadingState label="Memuat log gagal..." />
+          <LoadingState label="Loading failed logs..." />
         ) : failedQuery.data?.items.length === 0 ? (
-          <EmptyState title="Tidak ada backup gagal" message="Semua tampak aman pada daftar terbaru." />
+          <EmptyState title="No failed backups" message="Everything looks good in the latest results." />
         ) : (
           failedQuery.data?.items.map((log) => (
             <Button key={log.id} variant="ghost" onPress={() => router.push(`/logs/${log.id}`)}>
@@ -165,11 +165,11 @@ export default function DashboardScreen() {
       </Card>
 
       <Card>
-        <AppText variant="subtitle">Backup Terbaru per NAS</AppText>
+        <AppText variant="subtitle">Latest Backup by NAS</AppText>
         {nasQuery.isLoading ? (
-          <LoadingState label="Memuat NAS..." />
+          <LoadingState label="Loading NAS..." />
         ) : nasQuery.data?.items.length === 0 ? (
-          <EmptyState title="Belum ada NAS" message="Collector belum mengirim metrik NAS." />
+          <EmptyState title="No NAS found" message="The collector has not sent any NAS metrics yet." />
         ) : (
           nasQuery.data?.items.map((nas, index) => {
             const latestLog = latestLogQueries[index]?.data?.items[0];
@@ -188,7 +188,7 @@ export default function DashboardScreen() {
                     <AppText variant="muted">{formatRelative(latestLog.created_at)}</AppText>
                   </View>
                 ) : (
-                  <AppText variant="muted">Belum ada log backup.</AppText>
+                  <AppText variant="muted">No backup logs yet.</AppText>
                 )}
               </View>
             );
@@ -226,7 +226,7 @@ function KpiCard({
       <AppText variant="muted">{subtitle}</AppText>
       {onPress ? (
         <Button variant="ghost" onPress={onPress}>
-          Buka
+          Open
         </Button>
       ) : null}
     </Card>

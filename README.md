@@ -8,6 +8,8 @@ tidak ditampilkan sebagai halaman mobile.
 ## Fitur
 
 - Login JWT dengan access token terenkripsi di Expo SecureStore.
+- Seluruh teks yang tampil kepada pengguna menggunakan bahasa Inggris; waktu
+  operasional tetap ditampilkan dalam zona Asia/Jakarta dengan label WIB.
 - Dashboard ringkas untuk freshness NAS, health/storage Ceph, tren backup, dan
   backup gagal terbaru.
 - Backup logs dengan filter, pagination, detail, acknowledge, dan aksi hapus

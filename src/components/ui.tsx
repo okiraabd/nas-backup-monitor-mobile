@@ -172,7 +172,7 @@ export function Field({
         />
         {onToggleSecureTextEntry ? (
           <Pressable
-            accessibilityLabel={secureTextEntry ? 'Tampilkan password' : 'Sembunyikan password'}
+            accessibilityLabel={secureTextEntry ? 'Show password' : 'Hide password'}
             accessibilityRole="button"
             hitSlop={8}
             onPress={onToggleSecureTextEntry}
@@ -235,21 +235,21 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <Card style={styles.stateCard}>
       <AppText variant="subtitle" style={{ color: colors.destructiveBright }}>
-        Gagal memuat
+        Failed to load
       </AppText>
       <AppText variant="muted" style={styles.centerText}>
         {message}
       </AppText>
       {onRetry ? (
         <Button variant="outline" onPress={onRetry}>
-          Coba lagi
+          Try again
         </Button>
       ) : null}
     </Card>
   );
 }
 
-export function LoadingState({ label = 'Memuat...' }: { label?: string }) {
+export function LoadingState({ label = 'Loading...' }: { label?: string }) {
   return (
     <View style={styles.loading}>
       <ActivityIndicator color={colors.primary} />

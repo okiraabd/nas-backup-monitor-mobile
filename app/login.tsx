@@ -13,8 +13,8 @@ import { persistLogin } from '@/src/features/auth/AuthProvider';
 import { colors, spacing } from '@/src/theme/colors';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username wajib diisi'),
-  password: z.string().min(1, 'Password wajib diisi'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -33,10 +33,10 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error) {
       const message =
-        error instanceof Error && error.message.includes('tidak diizinkan')
+        error instanceof Error && error.message.includes('not allowed')
           ? error.message
-          : getApiErrorMessage(error, 'Username/password salah atau server tidak terjangkau');
-      Alert.alert('Login gagal', message);
+          : getApiErrorMessage(error, 'Invalid username or password, or the server is unavailable');
+      Alert.alert('Login failed', message);
     }
   }
 
@@ -55,7 +55,7 @@ export default function LoginScreen() {
               Backup Monitor
             </AppText>
             <AppText variant="muted" style={styles.center}>
-              Masuk untuk memantau backup NAS dan Ceph.
+              Sign in to monitor NAS backups and Ceph.
             </AppText>
           </View>
 
@@ -102,7 +102,7 @@ export default function LoginScreen() {
           />
 
           <Button disabled={form.formState.isSubmitting} onPress={form.handleSubmit(onSubmit)}>
-            {form.formState.isSubmitting ? 'Masuk...' : 'Sign in'}
+            {form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
           </Button>
         </Card>
       </Screen>

@@ -36,12 +36,12 @@ api.interceptors.response.use(
   },
 );
 
-export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kesalahan') {
+export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong') {
   if (isAxiosError(error)) {
     const detail = error.response?.data?.detail;
     if (typeof detail === 'string') return detail;
     if (Array.isArray(detail) && detail.length > 0) return detail[0]?.msg || fallback;
-    if (error.message === 'Network Error') return 'Tidak dapat terhubung ke server';
+    if (error.message === 'Network Error') return 'Unable to connect to the server';
   }
   return fallback;
 }

@@ -83,7 +83,7 @@ export default function LogsScreen() {
     >
       <SectionHeader
         title="Backup Logs"
-        subtitle="Riwayat job backup dari semua NAS."
+        subtitle="Backup job history from all NAS devices."
         action={<RefreshButton refreshing={isManualRefreshing} onPress={() => void refresh()} />}
       />
       <UpdatedAt timestamp={Math.max(logsQuery.dataUpdatedAt, nasQuery.dataUpdatedAt)} />
@@ -110,8 +110,8 @@ export default function LogsScreen() {
             ...(nasQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
           ]}
         />
-        <Field label="Job name" value={jobName} onChangeText={setJobName} placeholder="Cari job..." />
-        <Field label="Tanggal WIB" value={dateText} onChangeText={setDateText} placeholder="YYYY-MM-DD" />
+        <Field label="Job name" value={jobName} onChangeText={setJobName} placeholder="Search jobs..." />
+        <Field label="Date (WIB)" value={dateText} onChangeText={setDateText} placeholder="YYYY-MM-DD" />
         {isFiltered ? (
           <Button
             variant="ghost"
@@ -128,11 +128,11 @@ export default function LogsScreen() {
       </Card>
 
       {logsQuery.isLoading ? (
-        <LoadingState label="Memuat backup logs..." />
+        <LoadingState label="Loading backup logs..." />
       ) : items.length === 0 ? (
         <EmptyState
-          title={isFiltered ? 'Tidak ada hasil' : 'Belum ada backup log'}
-          message={isFiltered ? 'Coba longgarkan filter pencarian.' : 'Reporter NAS belum mengirim log.'}
+          title={isFiltered ? 'No results found' : 'No backup logs yet'}
+          message={isFiltered ? 'Try using fewer filters.' : 'The NAS reporter has not sent any logs yet.'}
         />
       ) : (
         <View style={styles.list}>
@@ -164,11 +164,11 @@ export default function LogsScreen() {
               disabled={logsQuery.isFetchingNextPage}
               onPress={() => logsQuery.fetchNextPage()}
             >
-              {logsQuery.isFetchingNextPage ? 'Memuat...' : 'Load more'}
+              {logsQuery.isFetchingNextPage ? 'Loading...' : 'Load more'}
             </Button>
           ) : (
             <AppText variant="muted" style={styles.center}>
-              Semua log yang cocok sudah ditampilkan.
+              All matching logs are displayed.
             </AppText>
           )}
         </View>

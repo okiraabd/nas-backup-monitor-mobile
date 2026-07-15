@@ -52,7 +52,7 @@ export default function MonitorScreen() {
     <Screen contentStyle={styles.content}>
       <SectionHeader
         title="Monitoring"
-        subtitle="Metrik NAS dan Ceph dari collector."
+        subtitle="NAS and Ceph metrics from the collector."
         action={
           <RefreshButton
             refreshing={isManualRefreshing || activeFetchCount > 0}
@@ -125,10 +125,10 @@ function NasMonitor() {
     ...(nasListQuery.data?.items.map((nas) => ({ label: nas.source_id, value: nas.source_id })) ?? []),
   ];
 
-  if (nasListQuery.isLoading) return <LoadingState label="Memuat NAS..." />;
+  if (nasListQuery.isLoading) return <LoadingState label="Loading NAS..." />;
   if (nasListQuery.isError) return <ErrorState message={getApiErrorMessage(nasListQuery.error)} />;
   if (!nasListQuery.data?.items.length) {
-    return <EmptyState title="Belum ada NAS" message="Collector belum mengirim metrik NAS." />;
+    return <EmptyState title="No NAS found" message="The collector has not sent any NAS metrics yet." />;
   }
 
   const snapshot = snapshotQuery.data;
@@ -140,7 +140,7 @@ function NasMonitor() {
       <PillSelector value={hours} onChange={setHours} options={TIMEFRAMES} />
       <UpdatedAt timestamp={Math.max(snapshotQuery.dataUpdatedAt, cpuQuery.dataUpdatedAt, ramQuery.dataUpdatedAt)} />
       {snapshotQuery.isLoading ? (
-        <LoadingState label="Memuat snapshot NAS..." />
+        <LoadingState label="Loading NAS snapshot..." />
       ) : snapshot ? (
         <>
           <View style={styles.sourceHeader}>
@@ -219,9 +219,9 @@ function CephMonitor() {
   const osdIn = getMetric('osd_in')?.value;
   const osdTotal = getMetric('osd_total')?.value;
 
-  if (snapshotQuery.isLoading) return <LoadingState label="Memuat Ceph..." />;
+  if (snapshotQuery.isLoading) return <LoadingState label="Loading Ceph..." />;
   if (snapshotQuery.isError) {
-    return <EmptyState title="No Ceph Data" message="Belum ada snapshot Ceph atau collector belum mengirim data." />;
+    return <EmptyState title="No Ceph data" message="No Ceph snapshot is available, or the collector has not sent data yet." />;
   }
 
   return (
