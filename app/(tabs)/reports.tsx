@@ -37,12 +37,15 @@ const generateSchema = z
 
 type GenerateValues = z.infer<typeof generateSchema>;
 
+const REPORT_RENDER_BATCH_SIZE = 20;
+
 export default function ReportsScreen() {
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'admin';
   const queryClient = useQueryClient();
   const [generateOpen, setGenerateOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [visibleReportCount, setVisibleReportCount] = useState(REPORT_RENDER_BATCH_SIZE);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -83,6 +86,11 @@ export default function ReportsScreen() {
     if (!needle) return all;
     return all.filter((report) => report.filename.toLowerCase().includes(needle));
   }, [reportsQuery.data, search]);
+  const visibleReports = useMemo(
+    () => filteredReports.slice(0, visibleReportCount),
+    [filteredReports, visibleReportCount],
+  );
+  const hasMoreReports = visibleReports.length < filteredReports.length;
 
   const generateMutation = useMutation({
     mutationFn: (values: GenerateValues) =>
@@ -156,7 +164,15 @@ export default function ReportsScreen() {
         />
       ) : null}
 
-      <Field label="Search" value={search} onChangeText={setSearch} placeholder="Search filenames..." />
+      <Field
+        label="Search"
+        value={search}
+        onChangeText={(value) => {
+          setSearch(value);
+          setVisibleReportCount(REPORT_RENDER_BATCH_SIZE);
+        }}
+        placeholder="Search filenames..."
+      />
 
       {reportsQuery.isLoading ? (
         <LoadingState label="Loading reports..." />
@@ -169,7 +185,7 @@ export default function ReportsScreen() {
         />
       ) : (
         <View style={styles.stack}>
-          {filteredReports.map((report) => (
+          {visibleReports.map((report) => (
             <Card key={report.id}>
               <View style={styles.reportHeader}>
                 <View style={styles.reportTitle}>
@@ -210,6 +226,14 @@ export default function ReportsScreen() {
               <AppText variant="muted">{formatDateTimeWib(report.generated_at, { seconds: false })}</AppText>
             </Card>
           ))}
+          {hasMoreReports ? (
+            <Button
+              variant="outline"
+              onPress={() => setVisibleReportCount((count) => count + REPORT_RENDER_BATCH_SIZE)}
+            >
+              Load more
+            </Button>
+          ) : null}
         </View>
       )}
 
