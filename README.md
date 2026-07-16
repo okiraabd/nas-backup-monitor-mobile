@@ -59,6 +59,14 @@ tidak ditemukan.
 
 ## Konfigurasi API
 
+URL API adalah konfigurasi build-time. Aplikasi membaca
+`EXPO_PUBLIC_API_BASE_URL`; bila tidak tersedia pada development lokal, aplikasi
+memakai fallback Android emulator `http://10.0.2.2:8000/api`. `app.json` tidak
+menyimpan URL server. Gunakan base URL lengkap dengan prefix `/api` dan tanpa
+endpoint tambahan.
+
+### Development lokal
+
 Salin template environment:
 
 ~~~bash
@@ -71,21 +79,14 @@ Di PowerShell, perintah setaranya adalah:
 Copy-Item .env.example .env
 ~~~
 
-Alamat API dipilih dengan urutan berikut:
-
-1. `EXPO_PUBLIC_API_BASE_URL` dari `.env`.
-2. `expo.extra.apiBaseUrl` dari `app.json`.
-3. Fallback Android emulator `http://10.0.2.2:8000/api`.
-
 Template `.env.example` memakai `http://localhost:8000/api`. Ganti nilai itu
 sebelum menjalankan Metro bila memakai emulator, perangkat LAN, atau API publik;
 selama variabel tersebut ada, fallback emulator tidak akan dipakai.
 
-Gunakan base URL lengkap dengan prefix `/api` dan tanpa endpoint tambahan.
 Contoh API publik:
 
 ~~~env
-EXPO_PUBLIC_API_BASE_URL=https://api-monitor.qra.web.id/api
+EXPO_PUBLIC_API_BASE_URL=https://api.example.com/api
 ~~~
 
 Contoh untuk backend lokal:
@@ -102,6 +103,67 @@ bersih. Nilai environment Expo dibaca saat bundle dibuat:
 ~~~bash
 npx expo start --clear
 ~~~
+
+File `.env` sengaja masuk `.gitignore`. Ia dipakai oleh Expo CLI lokal, tetapi
+tidak tersedia pada EAS Build cloud karena tidak ikut di-upload.
+
+### EAS Build cloud
+
+Untuk build APK/AAB, simpan URL pada EAS Environment Variables agar URL tidak
+perlu diduplikasi atau diubah di `eas.json` dan `app.json` setiap kali server
+berganti. `EXPO_PUBLIC_` bukan secret: nilainya akan tertanam di bundle aplikasi
+dan dapat dilihat pengguna.
+
+Setup pertama untuk environment preview dan production:
+
+~~~powershell
+eas env:create --name EXPO_PUBLIC_API_BASE_URL --value https://api.example.com/api --environment preview --visibility plaintext
+eas env:create --name EXPO_PUBLIC_API_BASE_URL --value https://api.example.com/api --environment production --visibility plaintext
+~~~
+
+Profil build perlu memilih environment EAS dan tidak lagi mendefinisikan
+`EXPO_PUBLIC_API_BASE_URL` melalui blok `env` inline. Bentuk yang dianjurkan:
+
+~~~json
+{
+  "build": {
+    "preview": {
+      "environment": "preview",
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "environment": "production",
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" }
+    }
+  }
+}
+~~~
+
+Periksa nilai yang tersimpan:
+
+~~~powershell
+eas env:list --environment preview
+eas env:list --environment production
+~~~
+
+Untuk mengganti server tanpa mengedit file proyek:
+
+~~~powershell
+eas env:update --name EXPO_PUBLIC_API_BASE_URL --value https://server-baru.example.com/api --environment preview --visibility plaintext
+eas env:update --name EXPO_PUBLIC_API_BASE_URL --value https://server-baru.example.com/api --environment production --visibility plaintext
+~~~
+
+Sinkronkan environment EAS ke `.env` lokal bila ingin memakai URL yang sama saat
+development:
+
+~~~powershell
+eas env:pull --environment preview
+~~~
+
+Perubahan URL tidak mengubah APK yang sudah terpasang. Jalankan build baru dan
+install update APK agar URL baru tertanam di bundle.
 
 HTTPS wajib untuk deployment publik. Build Android standalone menonaktifkan
 cleartext traffic; profil APK dan AAB menggunakan API publik HTTPS. Expo Go
@@ -136,11 +198,10 @@ Perintah npm yang tersedia:
 ## Membuat APK Android
 
 Profil `preview` pada `eas.json` menghasilkan APK standalone yang dapat disimpan,
-dipindahkan ke perangkat lain, dan di-install tanpa Expo Go. Profil ini sudah
-memakai API publik `https://api-monitor.qra.web.id/api`.
+dipindahkan ke perangkat lain, dan di-install tanpa Expo Go. Sebelum build,
+pastikan `EXPO_PUBLIC_API_BASE_URL` tersedia pada EAS environment `preview`.
 
-Install EAS CLI dan login dengan akun Expo yang memiliki akses ke owner
-`qra404s-team`:
+Install EAS CLI dan login dengan akun Expo yang memiliki akses ke proyek EAS:
 
 ~~~powershell
 npm install --global eas-cli
@@ -200,13 +261,20 @@ Aplikasi tidak memakai refresh token jangka panjang. Respons 401 menghapus sesi
 lokal dan meminta pengguna login kembali. Saat logout, aplikasi mencoba revoke
 token melalui API lalu selalu menghapus token dari SecureStore.
 
-Dengan `SEED_MODE=users` atau `demo`, backend membuat akun development berikut:
+Akun development dibuat oleh backend saat memakai `SEED_MODE=users` atau `demo`.
+Lihat dokumentasi backend untuk proses bootstrap, segera rotasi semua password,
+gunakan `SEED_MODE=none`, dan jangan memakai kredensial seed pada production.
 
-- `admin` / `admin123`
-- `operator` / `operator`
+## Keamanan repository publik
 
-Password seed hanya untuk bootstrap development. Rotasi password, gunakan
-`SEED_MODE=none`, dan jangan memakai kredensial contoh pada production.
+- Jangan commit `.env`, token API, kredensial pengguna, atau URL server internal.
+- Simpan URL build cloud melalui EAS Environment Variables. Walaupun variabel
+  `EXPO_PUBLIC_` bukan secret, cara ini mencegah URL deployment tersimpan di Git.
+- Jangan commit keystore, private key, provisioning profile, atau file kredensial
+  layanan. Pola file tersebut sudah dicakup oleh `.gitignore`.
+- `owner`, `extra.eas.projectId`, dan Android package ID pada `app.json` adalah
+  identifier publik, bukan secret. Nilai tersebut diperlukan untuk mengaitkan
+  aplikasi dengan proyek EAS dan identitas paket Android.
 
 ## Verifikasi
 

@@ -13,10 +13,15 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+credentials.json
+google-services.json
+GoogleService-Info.plist
+service-account*.json
 
 # Metro
 .metro-health-check*
@@ -31,8 +36,9 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
 .env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
