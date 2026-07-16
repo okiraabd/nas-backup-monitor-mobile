@@ -13,15 +13,13 @@
     },
     "android": {
       "package": "id.web.qra.nasbackupmonitor",
-      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#020817",
         "foregroundImage": "./assets/images/adaptive-foreground-v2.png",
         "monochromeImage": "./assets/images/adaptive-foreground-v2.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": false
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
