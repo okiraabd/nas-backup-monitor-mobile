@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Server } from 'lucide-react-native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
@@ -48,7 +48,12 @@ export default function LoginScreen() {
       <Screen contentStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Card style={styles.card}>
           <View style={styles.logo}>
-            <Server color={colors.primary} size={34} />
+            <Image
+              accessibilityLabel="NAS Backup Monitor"
+              contentFit="contain"
+              source={require('../assets/images/splash-mark-v2.png')}
+              style={styles.logoImage}
+            />
           </View>
           <View style={styles.header}>
             <AppText variant="title" style={styles.center}>
@@ -123,12 +128,14 @@ const styles = StyleSheet.create({
   },
   logo: {
     alignSelf: 'center',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: `${colors.primary}18`,
+    width: 104,
+    height: 104,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   header: {
     gap: spacing.sm,
