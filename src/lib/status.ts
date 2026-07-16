@@ -1,5 +1,8 @@
 import { colors } from '@/src/theme/colors';
 
+export const DASHBOARD_ACCESS_MESSAGE =
+  'This account cannot access the dashboard. Only admin and operator accounts are allowed.';
+
 export function freshnessColor(status: string | undefined) {
   if (status === 'fresh') return colors.success;
   if (status === 'stale') return colors.warn;

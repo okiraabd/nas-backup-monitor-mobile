@@ -3,13 +3,15 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { authApi } from '@/src/api/auth';
 import { getApiErrorMessage } from '@/src/api/client';
 import { AppText, Button, Card, Field, Screen } from '@/src/components/ui';
 import { persistLogin } from '@/src/features/auth/AuthProvider';
+import { DASHBOARD_ACCESS_MESSAGE } from '@/src/lib/status';
+import { useAuthStore } from '@/src/store/auth-store';
 import { colors, spacing } from '@/src/theme/colors';
 
 const loginSchema = z.object({
@@ -21,6 +23,9 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const loginNotice = useAuthStore((state) => state.loginNotice);
+  const setLoginNotice = useAuthStore((state) => state.setLoginNotice);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: '', password: '' },
@@ -28,15 +33,17 @@ export default function LoginScreen() {
 
   async function onSubmit(values: LoginValues) {
     try {
+      setLoginError(null);
+      setLoginNotice(null);
       const response = await authApi.login(values);
       await persistLogin(response.access_token, response.user);
       router.replace('/(tabs)');
     } catch (error) {
       const message =
-        error instanceof Error && error.message.includes('not allowed')
+        error instanceof Error && error.message === DASHBOARD_ACCESS_MESSAGE
           ? error.message
           : getApiErrorMessage(error, 'Invalid username or password, or the server is unavailable');
-      Alert.alert('Login failed', message);
+      setLoginError(message);
     }
   }
 
@@ -63,6 +70,12 @@ export default function LoginScreen() {
               Sign in to monitor NAS backups and Ceph.
             </AppText>
           </View>
+
+          {loginError || loginNotice ? (
+            <View style={styles.errorBanner}>
+              <AppText style={styles.errorBannerText}>{loginError ?? loginNotice}</AppText>
+            </View>
+          ) : null}
 
           <Controller
             control={form.control}
@@ -149,5 +162,16 @@ const styles = StyleSheet.create({
   error: {
     color: colors.destructiveBright,
     fontSize: 12,
+  },
+  errorBanner: {
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: `${colors.destructiveBright}66`,
+    borderRadius: 6,
+    backgroundColor: `${colors.destructiveBright}12`,
+  },
+  errorBannerText: {
+    color: colors.destructiveBright,
+    textAlign: 'center',
   },
 });

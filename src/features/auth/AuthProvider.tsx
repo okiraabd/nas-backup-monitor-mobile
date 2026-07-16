@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import { authApi } from '@/src/api/auth';
 import { getApiErrorMessage, getApiErrorStatus, setUnauthorizedHandler } from '@/src/api/client';
 import { clearAccessToken, hydrateToken, setAccessToken } from '@/src/api/token';
-import { isHumanRole } from '@/src/lib/status';
+import { DASHBOARD_ACCESS_MESSAGE, isHumanRole } from '@/src/lib/status';
 import { useAuthStore } from '@/src/store/auth-store';
 import type { User } from '@/src/types/api';
 
@@ -13,6 +13,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const setUser = useAuthStore((state) => state.setUser);
   const setBootstrapped = useAuthStore((state) => state.setBootstrapped);
   const setBootstrapError = useAuthStore((state) => state.setBootstrapError);
+  const setLoginNotice = useAuthStore((state) => state.setLoginNotice);
   const bootstrapAttempt = useAuthStore((state) => state.bootstrapAttempt);
   const sessionExpiryHandled = useRef(false);
 
@@ -48,7 +49,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!token) return;
         const user = await authApi.me();
         if (!isHumanRole(user.role)) {
-          await clearAccessToken();
+          await clearSession(false);
+          if (mounted) setLoginNotice(DASHBOARD_ACCESS_MESSAGE);
           return;
         }
         if (mounted) setUser(user);
@@ -76,17 +78,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
       mounted = false;
       setUnauthorizedHandler(null);
     };
-  }, [bootstrapAttempt, clearSession, setBootstrapError, setBootstrapped, setUser]);
+  }, [bootstrapAttempt, clearSession, setBootstrapError, setBootstrapped, setLoginNotice, setUser]);
 
   return children;
 }
 
 export async function persistLogin(token: string, user: User) {
   if (!isHumanRole(user.role)) {
-    await clearAccessToken();
-    throw new Error('This account is not allowed to use the mobile app.');
+    useAuthStore.getState().setLoginNotice(DASHBOARD_ACCESS_MESSAGE);
+    try {
+      await clearAccessToken();
+    } catch {
+      // Access remains denied even if secure storage cleanup fails.
+    }
+    throw new Error(DASHBOARD_ACCESS_MESSAGE);
   }
   await setAccessToken(token);
+  useAuthStore.getState().setLoginNotice(null);
   useAuthStore.getState().setUser(user);
 }
 
